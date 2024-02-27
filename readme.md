@@ -105,7 +105,7 @@ Todas las 'Keys' de configuraciones estan relacionadas a un mensaje de tipo 'Req
 
 ### Configuraciones soportadas
 
-Los marcados con * son obligatorios.
+Los marcados con * son obligatorios..
 
 | ConfigKey | Request struct | Response struct | Description | Details |
 | --- | --- | --- | --- | --- |
