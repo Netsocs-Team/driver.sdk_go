@@ -524,4 +524,4 @@ type GetSubdevicesResponseItem struct {
 	ChildPort        int    `json:"child_port"`
 }
 
-type GetSubdevicesResponse []GetSubdevicesResponseItem
+type GetSubdevicesResponse []*GetSubdevicesResponseItem
