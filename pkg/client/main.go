@@ -7,13 +7,16 @@ import (
 	"os"
 
 	"github.com/Netsocs-Team/driver.sdk_go/pkg/config"
+	"github.com/Netsocs-Team/driver.sdk_go/pkg/objects"
 	"github.com/Netsocs-Team/driver.sdk_go/pkg/tools"
 )
 
 type NetsocsDriverClient struct {
+	objectHandler objects.ObjectHandler
 	driverKey     string
 	driverHubHost string
 	isSSL         bool
+	DriverName    string
 }
 
 func NewNetsocsDriverClient(driverKey string, driverHubHost string, isSSL bool) *NetsocsDriverClient {
@@ -21,6 +24,7 @@ func NewNetsocsDriverClient(driverKey string, driverHubHost string, isSSL bool) 
 		driverKey:     driverKey,
 		driverHubHost: driverHubHost,
 		isSSL:         isSSL,
+		objectHandler: objects.GetObjectHandler(),
 	}
 
 	// If the events.json file exists, add the handler for the actionListenEvents
@@ -33,6 +37,18 @@ func NewNetsocsDriverClient(driverKey string, driverHubHost string, isSSL bool) 
 	}
 
 	return client
+}
+
+func New() (*NetsocsDriverClient, error) {
+
+	fileData, err := getDriverNetsocsDotJsonContent("driver.netsocs.json")
+	if err != nil {
+		return nil, err
+	}
+
+	client := NewNetsocsDriverClient(fileData.DriverKey, fileData.DriverHubHost, false)
+	client.DriverName = fileData.Name
+	return client, nil
 }
 
 func (d *NetsocsDriverClient) GetChildren(parentId int) ([]Device, error) {
@@ -78,4 +94,8 @@ func (d *NetsocsDriverClient) buildURL(uri string) string {
 		return fmt.Sprintf("https://%s/api/v1/%s", d.driverHubHost, uri)
 	}
 	return fmt.Sprintf("http://%s/api/v1/%s", d.driverHubHost, uri)
+}
+
+func (c *NetsocsDriverClient) RegisterObject(objectRunner objects.ObjectRunner) error {
+	return objects.RegisterObject(objectRunner, c.objectHandler, c.driverKey, c.driverHubHost)
 }

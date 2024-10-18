@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/Netsocs-Team/driver.sdk_go/pkg/objects"
 	"github.com/gorilla/websocket"
 )
 
@@ -60,14 +61,52 @@ type defaultDataResponse struct {
 	Msg   string `json:"msg"`
 }
 
+// This function will start a websocket listener for all 'configuration' requests
+// coming from the DriverHub.
+// In the SDK, there is a map of handlers that can be registered for each configuration.
+// This function, upon receiving a configuration, will look in the map of handlers
+// to see if there is a handler for that configuration. If there is no handler, it will return an error.
+// More information here https://.../docs
 func ListenConfig(host string, driverKey string) error {
-
+	objectsHandler := objects.GetObjectHandler()
 	go func() {
 		for {
 			select {
 			case message := <-messages:
 				handler := handlersMap[message.ConfigKey]
-				if handler != nil {
+				if objectsHandler.IsConfigForObject(string(message.ConfigKey)) {
+					response, err := objectsHandler.CallMethod(string(message.ConfigKey), message.Value)
+					if err != nil {
+						tmp := &defaultDataResponse{
+							Error: true,
+							Msg:   err.Error(),
+						}
+						jsondata, _ := json.Marshal(tmp)
+						responses <- &s_response{
+							RequestId: message.RequestID,
+							Data:      string(jsondata),
+						}
+					} else {
+						if response == nil {
+							tmp := &defaultDataResponse{
+								Error: false,
+								Msg:   "OK",
+							}
+							jsondata, _ := json.Marshal(tmp)
+							responses <- &s_response{
+								RequestId: message.RequestID,
+								Data:      string(jsondata),
+							}
+						} else {
+							jsondata, _ := json.Marshal(response)
+							responses <- &s_response{
+								RequestId: message.RequestID,
+								Data:      string(jsondata),
+							}
+						}
+					}
+
+				} else if handler != nil {
 					response, err := handler(message.Value, message.DeviceData)
 					if err == nil {
 						if response == "" || response == "null" {
