@@ -11,21 +11,26 @@ import (
 // Deprecated: Use `Dispatcher` instead.
 type EventDispatcher struct {
 	host string
-	port int
+	port *int
 	key  string
 }
 
 const DEFAULT_EVENT_PORT = 3070
 
-func NewEventDispatcher(host string, key string) *EventDispatcher {
+func NewEventDispatcher(host string, key string, port *int) *EventDispatcher {
+	// if host == "xxx/" quite / from the end
+	parsed_host := host
+	if host[len(host)-1] == '/' {
+		parsed_host = host[:len(host)-1]
+	}
 	return &EventDispatcher{
-		host: host,
-		port: DEFAULT_EVENT_PORT,
+		host: parsed_host,
+		port: port,
 		key:  key,
 	}
 }
 
-func (e *EventDispatcher) SetPort(port int) {
+func (e *EventDispatcher) SetPort(port *int) {
 	e.port = port
 }
 
@@ -34,7 +39,7 @@ func (e *EventDispatcher) Dispatch(eventKey string, deviceID int) error {
 	body := []byte(bodyString)
 	bodyReader := bytes.NewReader(body)
 
-	_, err := http.Post(fmt.Sprintf("http://%s:%d/v1/topologia/misc/%s", e.host, e.port, eventKey), "application/json", bodyReader)
+	_, err := http.Post(e.CreateUrlEvent(eventKey), "application/json", bodyReader)
 	return err
 }
 func (e *EventDispatcher) DispatchWithOriginalValue(eventKey string, deviceID int, originalValue string) error {
@@ -42,7 +47,7 @@ func (e *EventDispatcher) DispatchWithOriginalValue(eventKey string, deviceID in
 	body := []byte(bodyString)
 	bodyReader := bytes.NewReader(body)
 
-	_, err := http.Post(fmt.Sprintf("http://%s:%d/v1/topologia/misc/%s", e.host, e.port, eventKey), "application/json", bodyReader)
+	_, err := http.Post(e.CreateUrlEvent(eventKey), "application/json", bodyReader)
 	return err
 }
 
@@ -50,7 +55,7 @@ func (e *EventDispatcher) DispatchWithChannels(eventKey string, deviceID int, ch
 	bodyString := fmt.Sprintf(`{"deviceId": %d, "deviceByProps": [ "\"parentDevice\": %d", "\"channelNumber\": %d"]}`, deviceID, deviceID, channelNumber)
 	body := []byte(bodyString)
 	bodyReader := bytes.NewReader(body)
-	_, err := http.Post(fmt.Sprintf("http://%s:%d/v1/topologia/misc/%s", e.host, e.port, eventKey), "application/json",
+	_, err := http.Post(e.CreateUrlEvent(eventKey), "application/json",
 		bodyReader)
 	return err
 }
@@ -58,7 +63,7 @@ func (e *EventDispatcher) DispatchWithChannelsAndOriginalValue(eventKey string, 
 	bodyString := fmt.Sprintf(`{"deviceId": %d, "deviceByProps": [ "\"parentDevice\": %d", "\"channelNumber\": %d"], "originalValue": "%s"}`, deviceID, deviceID, channelNumber, originalValue)
 	body := []byte(bodyString)
 	bodyReader := bytes.NewReader(body)
-	_, err := http.Post(fmt.Sprintf("http://%s:%d/v1/topologia/misc/%s", e.host, e.port, eventKey), "application/json",
+	_, err := http.Post(e.CreateUrlEvent(eventKey), "application/json",
 		bodyReader)
 	return err
 }
@@ -71,7 +76,7 @@ func (e *EventDispatcher) DispatchWithPersonIDAndOriginalValue(eventKey string, 
 	bodyString := fmt.Sprintf(`{"deviceId": %d, "originalValue": "%s", "userType": %d, "userId": %d}`, deviceID, originalValue, userType, userId)
 	body := []byte(bodyString)
 	bodyReader := bytes.NewReader(body)
-	_, err = http.Post(fmt.Sprintf("http://%s:%d/v1/topologia/misc/%s", e.host, e.port, eventKey), "application/json",
+	_, err = http.Post(e.CreateUrlEvent(eventKey), "application/json",
 		bodyReader)
 	return err
 }
@@ -84,14 +89,25 @@ func (e *EventDispatcher) DispatchWithPersonID(eventKey string, deviceID int, pe
 	bodyString := fmt.Sprintf(`{"deviceId": %d, "userType": %d, "userId": %d}`, deviceID, userType, userId)
 	body := []byte(bodyString)
 	bodyReader := bytes.NewReader(body)
-	_, err = http.Post(fmt.Sprintf("http://%s:%d/v1/topologia/misc/%s", e.host, e.port, eventKey), "application/json",
+	_, err = http.Post(e.CreateUrlEvent(eventKey), "application/json",
 		bodyReader)
 	return err
 }
 
 func (e *EventDispatcher) DispatchWithFile(eventKey string, deviceID int, file os.File) error {
-	_, err := http.Post(fmt.Sprintf("http://%s:%d/v1/topologia/misc/%s", e.host, e.port, eventKey), "application/json", &file)
+	_, err := http.Post(e.CreateUrlEvent(eventKey), "application/json", &file)
 	return err
+}
+
+func (e *EventDispatcher) CreateUrlEvent(eventKey string) string {
+	var url string
+	if e.port == nil {
+		url = fmt.Sprintf("http://%s/v1/topologia/misc/%s", e.host, eventKey)
+	} else {
+		url = fmt.Sprintf("http://%s:%d/v1/topologia/misc/%s", e.host, *e.port, eventKey)
+	}
+	fmt.Println(url)
+	return url
 }
 
 func getUserTypeAndUserIdFromPersonID(personId string) (userType int, userId int, err error) {
