@@ -35,8 +35,12 @@ func NewEventDispatcher(host string, key string, port ...int) *EventDispatcher {
 	}
 }
 
-func (e *EventDispatcher) SetPort(port *int) {
-	e.port = port
+func (e *EventDispatcher) SetPort(port ...int) {
+	var eventPort *int
+	if len(port) != 0 {
+		eventPort = &port[0]
+	}
+	e.port = eventPort
 }
 
 func (e *EventDispatcher) Dispatch(eventKey string, deviceID int) error {
@@ -111,7 +115,6 @@ func (e *EventDispatcher) CreateUrlEvent(eventKey string) string {
 	} else {
 		url = fmt.Sprintf("http://%s:%d/v1/topologia/misc/%s", e.host, *e.port, eventKey)
 	}
-	fmt.Println(url)
 	return url
 }
 
