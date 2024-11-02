@@ -17,15 +17,20 @@ type EventDispatcher struct {
 
 const DEFAULT_EVENT_PORT = 3070
 
-func NewEventDispatcher(host string, key string, port *int) *EventDispatcher {
+func NewEventDispatcher(host string, key string, port ...int) *EventDispatcher {
 	// if host == "xxx/" quite / from the end
 	parsed_host := host
 	if host[len(host)-1] == '/' {
 		parsed_host = host[:len(host)-1]
 	}
+	var eventPort *int
+	if len(port) != 0 {
+		eventPort = &port[0]
+	}
+
 	return &EventDispatcher{
 		host: parsed_host,
-		port: port,
+		port: eventPort,
 		key:  key,
 	}
 }
