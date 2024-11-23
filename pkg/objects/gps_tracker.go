@@ -19,36 +19,29 @@ type GPSTracker struct {
 
 func (g *GPSTracker) SetBatteryLevel(batteryLevel int) {
 	g.CommunicationToHandlerChannel <- commandToObjectHandler{
-		Command: _CHANGE_ATTRIBUTE_COMMAND,
-		Params:  `{"key":"batteryLevel","value":"` + fmt.Sprintf("%d", batteryLevel) + `"}`,
+		Command: _SET_STATE_COMMAND,
+		Params:  `{"batteryLevel":"` + fmt.Sprintf("%d", batteryLevel) + `"}`,
 	}
 }
 
-func (g *GPSTracker) SetLatitude(latitude float64) {
+func (g *GPSTracker) SetLocation(latitude float64, longitude float64) {
 	g.CommunicationToHandlerChannel <- commandToObjectHandler{
-		Command: _CHANGE_ATTRIBUTE_COMMAND,
-		Params:  `{"key":"latitude","value":"` + fmt.Sprintf("%f", latitude) + `"}`,
-	}
-}
-
-func (g *GPSTracker) SetLongitude(longitude float64) {
-	g.CommunicationToHandlerChannel <- commandToObjectHandler{
-		Command: _CHANGE_ATTRIBUTE_COMMAND,
-		Params:  `{"key":"longitude","value":"` + fmt.Sprintf("%f", longitude) + `"}`,
+		Command: _SET_STATE_COMMAND,
+		Params:  `{"latitude":"` + fmt.Sprintf("%f", latitude) + `","longitude":"` + fmt.Sprintf("%f", longitude) + `"}`,
 	}
 }
 
 func (g *GPSTracker) SetLocationAccuracy(locationAccuracy int) {
 	g.CommunicationToHandlerChannel <- commandToObjectHandler{
-		Command: _CHANGE_ATTRIBUTE_COMMAND,
-		Params:  `{"key":"locationAccuracy","value":"` + fmt.Sprintf("%d", locationAccuracy) + `"}`,
+		Command: _SET_STATE_COMMAND,
+		Params:  `{"locationAccuracy":"` + fmt.Sprintf("%d", locationAccuracy) + `"}`,
 	}
 }
 
 func (g *GPSTracker) SetLocationName(locationName string) {
 	g.CommunicationToHandlerChannel <- commandToObjectHandler{
-		Command: _CHANGE_ATTRIBUTE_COMMAND,
-		Params:  `{"key":"locationName","value":"` + locationName + `"}`,
+		Command: _SET_STATE_COMMAND,
+		Params:  `{"locationName":"` + locationName + `"}`,
 	}
 }
 

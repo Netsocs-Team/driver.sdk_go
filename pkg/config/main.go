@@ -8,8 +8,8 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"strings"
 
-	"github.com/Netsocs-Team/driver.sdk_go/pkg/objects"
 	"github.com/gorilla/websocket"
 )
 
@@ -68,45 +68,12 @@ type defaultDataResponse struct {
 // to see if there is a handler for that configuration. If there is no handler, it will return an error.
 // More information here https://.../docs
 func ListenConfig(host string, driverKey string) error {
-	objectsHandler := objects.GetObjectHandler()
 	go func() {
 		for {
 			select {
 			case message := <-messages:
 				handler := handlersMap[message.ConfigKey]
-				if objectsHandler.IsConfigForObject(string(message.ConfigKey)) {
-					response, err := objectsHandler.CallMethod(string(message.ConfigKey), message.Value)
-					if err != nil {
-						tmp := &defaultDataResponse{
-							Error: true,
-							Msg:   err.Error(),
-						}
-						jsondata, _ := json.Marshal(tmp)
-						responses <- &s_response{
-							RequestId: message.RequestID,
-							Data:      string(jsondata),
-						}
-					} else {
-						if response == nil {
-							tmp := &defaultDataResponse{
-								Error: false,
-								Msg:   "OK",
-							}
-							jsondata, _ := json.Marshal(tmp)
-							responses <- &s_response{
-								RequestId: message.RequestID,
-								Data:      string(jsondata),
-							}
-						} else {
-							jsondata, _ := json.Marshal(response)
-							responses <- &s_response{
-								RequestId: message.RequestID,
-								Data:      string(jsondata),
-							}
-						}
-					}
-
-				} else if handler != nil {
+				if handler != nil {
 					response, err := handler(message.Value, message.DeviceData)
 					if err == nil {
 						if response == "" || response == "null" {
@@ -165,6 +132,10 @@ func ListenConfig(host string, driverKey string) error {
 
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
+	if strings.HasPrefix(host, "http") || strings.HasPrefix(host, "https") {
+		host = strings.ReplaceAll(host, "https://", "")
+		host = strings.ReplaceAll(host, "http://", "")
+	}
 	u, err := url.Parse(fmt.Sprintf("ws://%s/ws/v1/config_communication", host))
 	if err != nil {
 		return err

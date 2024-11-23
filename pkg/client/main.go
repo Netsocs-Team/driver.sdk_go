@@ -12,19 +12,27 @@ import (
 )
 
 type NetsocsDriverClient struct {
-	objectHandler objects.ObjectHandler
 	driverKey     string
 	driverHubHost string
 	isSSL         bool
 	DriverName    string
+	objectsRunner objects.ObjectRunner
 }
 
 func NewNetsocsDriverClient(driverKey string, driverHubHost string, isSSL bool) *NetsocsDriverClient {
+	controller := objects.NewObjectController(driverHubHost, driverKey)
+	go func() {
+		err := controller.ListenActionRequests()
+		if err != nil {
+			panic(err)
+		}
+	}()
+	runner := objects.NewObjectRunner(controller)
 	client := &NetsocsDriverClient{
 		driverKey:     driverKey,
 		driverHubHost: driverHubHost,
 		isSSL:         isSSL,
-		objectHandler: objects.GetObjectHandler(),
+		objectsRunner: runner,
 	}
 
 	// If the events.json file exists, add the handler for the actionListenEvents
@@ -96,6 +104,6 @@ func (d *NetsocsDriverClient) buildURL(uri string) string {
 	return fmt.Sprintf("http://%s/api/v1/%s", d.driverHubHost, uri)
 }
 
-func (c *NetsocsDriverClient) RegisterObject(objectRunner objects.ObjectRunner) error {
-	return objects.RegisterObject(objectRunner, c.objectHandler, c.driverKey, c.driverHubHost)
+func (c *NetsocsDriverClient) RegisterObject(obj objects.RegistrableObject) error {
+	return c.objectsRunner.RegisterObject(obj)
 }

@@ -12,7 +12,7 @@ const (
 		Example: `{"key":"isOn","value":"true"}`
 		Where key is the attribute name and value is the value to set.
 	*/
-	_CHANGE_ATTRIBUTE_COMMAND Command = "change_attribute"
+	_SET_STATE_COMMAND Command = "change_attribute"
 )
 
 type changeAttributeCommandParams struct {
