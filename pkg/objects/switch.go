@@ -3,6 +3,7 @@ package objects
 type switchObject struct {
 	metadata      ObjectMetadata
 	switchActions SwitchActions
+	controller    ObjectController
 }
 
 // GetMetadata implements RegistrableObject.
@@ -21,11 +22,11 @@ func (s *switchObject) SetMetadata(metadata ObjectMetadata) error {
 func (s *switchObject) RunAction(action string, payload []byte) error {
 	switch action {
 	case "switch.action.turn_on":
-		return s.switchActions.TurnOn()
+		return s.switchActions.TurnOn(s, s.controller)
 	case "switch.action.turn_off":
-		return s.switchActions.TurnOff()
+		return s.switchActions.TurnOff(s, s.controller)
 	case "switch.action.toggle":
-		return s.switchActions.Toggle()
+		return s.switchActions.Toggle(s, s.controller)
 	}
 	return nil
 }
@@ -51,13 +52,14 @@ func (s *switchObject) GetAvailableStates() []string {
 
 // New implements RegistrableObject.
 func (s *switchObject) Setup(oc ObjectController) error {
+	s.controller = oc
 	return s.switchActions.Setup(s, oc)
 }
 
 type SwitchActions struct {
-	TurnOn  func() error
-	TurnOff func() error
-	Toggle  func() error
+	TurnOn  func(this RegistrableObject, oc ObjectController) error
+	TurnOff func(this RegistrableObject, oc ObjectController) error
+	Toggle  func(this RegistrableObject, oc ObjectController) error
 	Setup   func(this RegistrableObject, oc ObjectController) error
 }
 
