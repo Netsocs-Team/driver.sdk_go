@@ -1,5 +1,8 @@
 package objects
 
+const SWITCH_STATE_OFF = "switch.state.off"
+const SWITCH_STATE_ON = "switch.state.on"
+
 type switchObject struct {
 	metadata      ObjectMetadata
 	switchActions SwitchActions

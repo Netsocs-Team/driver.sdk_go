@@ -4,8 +4,11 @@ type ObjectRunner interface {
 	RegisterObject(object RegistrableObject) error
 }
 
+type SetupFunction func(RegistrableObject, ObjectController) error
+
 type ObjectController interface {
 	SetState(objectId string, state string) error
+	UpdateStateAttributes(objectId string, attributes map[string]interface{}) error
 	NewAction(action ObjectAction) error
 	CreateObject(RegistrableObject) error
 	ListenActionRequests() error
@@ -18,6 +21,7 @@ type ObjectMetadata struct {
 	Domain   string            `json:"domain"`
 	I18n     map[string]string `json:"i18n"`
 	DeviceID int               `json:"device_id"`
+	Tags     []string          `json:"tags"`
 }
 
 type ObjectAction struct {

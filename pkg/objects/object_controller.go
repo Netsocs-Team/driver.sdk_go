@@ -18,6 +18,17 @@ type objectController struct {
 	httpClient     *resty.Client
 }
 
+// UpdateStateAttributes implements ObjectController.
+func (o *objectController) UpdateStateAttributes(objectId string, attributes map[string]interface{}) error {
+	url := fmt.Sprintf("%s/objects/states/%s", o.driverhub_host, objectId)
+	body := map[string]map[string]interface{}{"state_additional_properties": attributes}
+	_, err := o.httpClient.R().
+		SetHeader("Content-Type", "application/json").
+		SetBody(body).
+		Put(url)
+	return err
+}
+
 // NewAction implements ObjectController.
 func (o *objectController) NewAction(action ObjectAction) error {
 	url := fmt.Sprintf("%s/objects/actions", o.driverhub_host)
@@ -90,7 +101,7 @@ func (o *objectController) CreateObject(obj RegistrableObject) error {
 	req.ID = obj.GetMetadata().ObjectID
 	req.Domain = obj.GetMetadata().Domain
 	req.Name = obj.GetMetadata().Name
-	req.Tags = []string{}
+	req.Tags = obj.GetMetadata().Tags
 	req.Type = obj.GetMetadata().Type
 	req.DeviceID = obj.GetMetadata().DeviceID
 
@@ -115,11 +126,21 @@ func (o *objectController) CreateObject(obj RegistrableObject) error {
 func (o *objectController) SetState(objectId, state string) error {
 	url := fmt.Sprintf("%s/objects/states/%s", o.driverhub_host, objectId)
 	body := map[string]string{"state": state}
-	_, err := o.httpClient.R().
+	resp, err := o.httpClient.R().
 		SetHeader("Content-Type", "application/json").
 		SetBody(body).
 		Put(url)
-	return err
+
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode() >= 400 {
+		if strings.Contains(resp.String(), "object is disabled") {
+			return nil
+		}
+		return fmt.Errorf("error setting state: %s", resp.String())
+	}
+	return nil
 }
 
 func NewObjectController(driverhubHost string, driverKey string) ObjectController {
