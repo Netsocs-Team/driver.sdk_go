@@ -30,7 +30,7 @@ type VideoChannelObject interface {
 }
 
 type videoChannelObject struct {
-	setup      SetupFunction
+	setup      func(VideoChannelObject, ObjectController) error
 	controller ObjectController
 	metadata   ObjectMetadata
 }
@@ -100,5 +100,7 @@ func (v *videoChannelObject) Setup(oc ObjectController) error {
 }
 
 func NewVideoChannelObject(metadata ObjectMetadata, setup func(VideoChannelObject, ObjectController) error) VideoChannelObject {
-	return &videoChannelObject{}
+	return &videoChannelObject{
+		setup: setup,
+	}
 }
