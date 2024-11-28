@@ -3,10 +3,31 @@ package objects
 const SWITCH_STATE_OFF = "switch.state.off"
 const SWITCH_STATE_ON = "switch.state.on"
 
+const SWITCH_ACTION_TURN_ON = "switch.action.turn_on"
+const SWITCH_ACTION_TURN_OFF = "switch.action.turn_off"
+
+type SwitchObject interface {
+	// base interface
+	RegistrableObject
+	// Set the state of the switch to on.
+	TurnOn() error
+	// Set the state of the switch to off.
+	TurnOff() error
+}
 type switchObject struct {
 	metadata      ObjectMetadata
 	switchActions SwitchActions
 	controller    ObjectController
+}
+
+// TurnOff implements SwitchObject.
+func (s *switchObject) TurnOff() error {
+	return s.controller.SetState(s.metadata.ObjectID, SWITCH_STATE_OFF)
+}
+
+// TurnOn implements SwitchObject.
+func (s *switchObject) TurnOn() error {
+	return s.controller.SetState(s.metadata.ObjectID, SWITCH_STATE_ON)
 }
 
 // GetMetadata implements RegistrableObject.
@@ -15,21 +36,13 @@ func (s *switchObject) GetMetadata() ObjectMetadata {
 	return s.metadata
 }
 
-// SetMetadata implements RegistrableObject.
-func (s *switchObject) SetMetadata(metadata ObjectMetadata) error {
-	s.metadata = metadata
-	return nil
-}
-
 // RunAction implements RegistrableObject.
 func (s *switchObject) RunAction(action string, payload []byte) error {
 	switch action {
-	case "switch.action.turn_on":
+	case SWITCH_ACTION_TURN_ON:
 		return s.switchActions.TurnOn(s, s.controller)
-	case "switch.action.turn_off":
+	case SWITCH_ACTION_TURN_OFF:
 		return s.switchActions.TurnOff(s, s.controller)
-	case "switch.action.toggle":
-		return s.switchActions.Toggle(s, s.controller)
 	}
 	return nil
 }
@@ -37,7 +50,7 @@ func (s *switchObject) RunAction(action string, payload []byte) error {
 // GetAvailableActions implements RegistrableObject.
 func (s *switchObject) GetAvailableActions() []ObjectAction {
 	actionsresponse := []ObjectAction{}
-	actions := []string{"switch.action.toggle", "switch.action.turn_on", "switch.action.turn_off"}
+	actions := []string{SWITCH_ACTION_TURN_ON, SWITCH_ACTION_TURN_OFF}
 
 	for _, action := range actions {
 		actionsresponse = append(actionsresponse, ObjectAction{
@@ -50,7 +63,7 @@ func (s *switchObject) GetAvailableActions() []ObjectAction {
 
 // GetAvailableStates implements RegistrableObject.
 func (s *switchObject) GetAvailableStates() []string {
-	return []string{"switch.state.off", "switch.state.on"}
+	return []string{SWITCH_STATE_OFF, SWITCH_STATE_ON}
 }
 
 // New implements RegistrableObject.
@@ -62,20 +75,19 @@ func (s *switchObject) Setup(oc ObjectController) error {
 type SwitchActions struct {
 	TurnOn  func(this RegistrableObject, oc ObjectController) error
 	TurnOff func(this RegistrableObject, oc ObjectController) error
-	Toggle  func(this RegistrableObject, oc ObjectController) error
 	Setup   func(this RegistrableObject, oc ObjectController) error
 }
 
-func NewSwitchObject(objectMetadata ObjectMetadata, actions SwitchActions) (RegistrableObject, error) {
+func NewSwitchObject(objectMetadata ObjectMetadata, actions SwitchActions) (SwitchObject, error) {
 	if objectMetadata.ObjectID == "" {
 		return nil, ErrObjectIdMandatory
 	} else if objectMetadata.Name == "" {
 		return nil, ErrNameMandatory
 	} else if objectMetadata.Domain == "" {
 		return nil, ErrDomainMandatory
-	} else if objectMetadata.DeviceID == 0 {
+	} else if objectMetadata.DeviceID == "" {
 		return nil, ErrDeviceIdMandatory
-	} else if actions.TurnOn == nil || actions.TurnOff == nil || actions.Toggle == nil || actions.Setup == nil {
+	} else if actions.TurnOn == nil || actions.TurnOff == nil || actions.Setup == nil {
 		return nil, ErrActionsMandatory
 	}
 

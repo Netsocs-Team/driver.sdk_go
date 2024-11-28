@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+
+	"github.com/go-resty/resty/v2"
 )
 
 type driverHubVersionResponse struct {
@@ -35,4 +37,26 @@ func (n *NetsocsDriverClient) checkVersion() error {
 	}
 
 	return nil
+}
+
+func (n *NetsocsDriverClient) RTSPToStreamID(rtsp string, name string) (string, error) {
+	type responseSchema struct {
+		StreamID string `json:"stream_id"`
+	}
+	responseBody := responseSchema{}
+	client := resty.New()
+	resp, err := client.R().
+		SetHeader("Content-Type", "application/json").
+		SetBody(map[string]string{"source": rtsp, "name": name}).
+		Post(fmt.Sprintf("%s/objects/video-channels/encoded-sources", n.driverHubHost))
+
+	if err != nil {
+		return "", err
+	}
+
+	if err := json.Unmarshal(resp.Body(), &responseBody); err != nil {
+		return "", err
+	}
+
+	return responseBody.StreamID, nil
 }

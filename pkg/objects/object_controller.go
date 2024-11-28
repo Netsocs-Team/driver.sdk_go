@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/Netsocs-Team/driver.sdk_go/internal/eventbus"
@@ -16,6 +17,16 @@ type objectController struct {
 	driverhub_host string
 	driver_key     string
 	httpClient     *resty.Client
+}
+
+// GetDriverKey implements ObjectController.
+func (o *objectController) GetDriverKey() string {
+	return o.driver_key
+}
+
+// GetDriverhubHost implements ObjectController.
+func (o *objectController) GetDriverhubHost() string {
+	return o.driverhub_host
 }
 
 // UpdateStateAttributes implements ObjectController.
@@ -103,7 +114,7 @@ func (o *objectController) CreateObject(obj RegistrableObject) error {
 	req.Name = obj.GetMetadata().Name
 	req.Tags = obj.GetMetadata().Tags
 	req.Type = obj.GetMetadata().Type
-	req.DeviceID = obj.GetMetadata().DeviceID
+	req.DeviceID, _ = strconv.Atoi(obj.GetMetadata().DeviceID)
 
 	url := fmt.Sprintf("%s/objects", o.driverhub_host)
 	resp, err := o.httpClient.R().

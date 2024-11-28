@@ -12,6 +12,8 @@ type ObjectController interface {
 	NewAction(action ObjectAction) error
 	CreateObject(RegistrableObject) error
 	ListenActionRequests() error
+	GetDriverhubHost() string
+	GetDriverKey() string
 }
 
 type ObjectMetadata struct {
@@ -20,7 +22,7 @@ type ObjectMetadata struct {
 	Type     string            `json:"type"`
 	Domain   string            `json:"domain"`
 	I18n     map[string]string `json:"i18n"`
-	DeviceID int               `json:"device_id"`
+	DeviceID string            `json:"device_id"`
 	Tags     []string          `json:"tags"`
 }
 
@@ -34,6 +36,5 @@ type RegistrableObject interface {
 	GetAvailableStates() []string
 	GetAvailableActions() []ObjectAction
 	RunAction(action string, payload []byte) error
-	SetMetadata(metadata ObjectMetadata) error
 	GetMetadata() ObjectMetadata
 }

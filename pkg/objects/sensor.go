@@ -57,12 +57,6 @@ func (s *sensorObject) RunAction(action string, payload []byte) error {
 	return nil
 }
 
-// SetMetadata implements RegistrableObject.
-func (s *sensorObject) SetMetadata(metadata ObjectMetadata) error {
-	s.metatada = metadata
-	return nil
-}
-
 // Setup implements RegistrableObject.
 func (s *sensorObject) Setup(oc ObjectController) error {
 	s.controller = oc
