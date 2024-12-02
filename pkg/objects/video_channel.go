@@ -85,6 +85,7 @@ func (v *videoChannelObject) GetAvailableStates() []string {
 
 // GetMetadata implements VideoChannelObject.
 func (v *videoChannelObject) GetMetadata() ObjectMetadata {
+	v.metadata.Type = "video_channel"
 	return v.metadata
 }
 
