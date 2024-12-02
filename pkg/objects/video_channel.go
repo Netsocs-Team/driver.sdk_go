@@ -101,6 +101,7 @@ func (v *videoChannelObject) Setup(oc ObjectController) error {
 
 func NewVideoChannelObject(metadata ObjectMetadata, setup func(VideoChannelObject, ObjectController) error) VideoChannelObject {
 	return &videoChannelObject{
-		setup: setup,
+		metadata: metadata,
+		setup:    setup,
 	}
 }
