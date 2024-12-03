@@ -15,6 +15,7 @@ type ObjectController interface {
 	GetDriverhubHost() string
 	GetDriverKey() string
 	DisabledObject(objectId string) error
+	EnabledObject(objectId string) error
 }
 
 type ObjectMetadata struct {

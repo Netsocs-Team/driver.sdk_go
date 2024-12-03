@@ -33,6 +33,19 @@ func (o *objectController) DisabledObject(objectId string) error {
 	}
 	return nil
 }
+func (o *objectController) EnabledObject(objectId string) error {
+	url := fmt.Sprintf("%s/objects/%s/enabled", o.driverhub_host, objectId)
+	resp, err := o.httpClient.R().
+		SetHeader("Content-Type", "application/json").
+		Put(url)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode() >= 400 {
+		return errors.New(resp.String())
+	}
+	return nil
+}
 
 // GetDriverKey implements ObjectController.
 func (o *objectController) GetDriverKey() string {

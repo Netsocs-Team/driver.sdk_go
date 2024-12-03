@@ -67,6 +67,11 @@ func (o *objectRunner) RegisterObject(object RegistrableObject) error {
 		defer o.controller.DisabledObject(object.GetMetadata().ObjectID)
 	}
 
+	err := o.controller.EnabledObject(object.GetMetadata().ObjectID)
+	if err != nil {
+		return err
+	}
+
 	for _, action := range object.GetAvailableActions() {
 		if err := o.controller.NewAction(action); err != nil {
 			if !strings.Contains(err.Error(), "ERR_ITEM_ALREADY_EXIST") {
