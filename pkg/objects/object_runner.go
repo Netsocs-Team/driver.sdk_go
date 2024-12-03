@@ -54,10 +54,17 @@ func (o *objectRunner) listenActions() {
 
 // RegisterObject implements objects.ObjectRunner.
 func (o *objectRunner) RegisterObject(object RegistrableObject) error {
+	var mustDisable bool = true
 	if err := o.controller.CreateObject(object); err != nil {
-		if !strings.Contains(err.Error(), "ERR_ITEM_ALREADY_EXIST") {
+		if strings.Contains(err.Error(), "ERR_ITEM_ALREADY_EXIST") {
+			mustDisable = false
+		} else {
 			return err
 		}
+	}
+
+	if mustDisable {
+		defer o.controller.DisabledObject(object.GetMetadata().ObjectID)
 	}
 
 	for _, action := range object.GetAvailableActions() {

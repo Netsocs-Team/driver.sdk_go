@@ -19,6 +19,21 @@ type objectController struct {
 	httpClient     *resty.Client
 }
 
+// DisabledObject implements ObjectController.
+func (o *objectController) DisabledObject(objectId string) error {
+	url := fmt.Sprintf("%s/objects/%s/disabled", o.driverhub_host, objectId)
+	resp, err := o.httpClient.R().
+		SetHeader("Content-Type", "application/json").
+		Put(url)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode() >= 400 {
+		return errors.New(resp.String())
+	}
+	return nil
+}
+
 // GetDriverKey implements ObjectController.
 func (o *objectController) GetDriverKey() string {
 	return o.driver_key
@@ -114,6 +129,7 @@ func (o *objectController) CreateObject(obj RegistrableObject) error {
 	req.Name = obj.GetMetadata().Name
 	req.Tags = obj.GetMetadata().Tags
 	req.Type = obj.GetMetadata().Type
+	req.Enabled = true
 	req.DeviceID, _ = strconv.Atoi(obj.GetMetadata().DeviceID)
 
 	url := fmt.Sprintf("%s/objects", o.driverhub_host)
