@@ -35,6 +35,11 @@ type videoChannelObject struct {
 	metadata   ObjectMetadata
 }
 
+// AddEventTypes implements VideoChannelObject.
+func (v *videoChannelObject) AddEventTypes(eventTypes []EventType) error {
+	panic("unimplemented")
+}
+
 // SetModeIdle implements VideoChannelObject.
 func (v *videoChannelObject) SetModeIdle() error {
 	return v.controller.SetState(v.GetMetadata().ObjectID, VIDEO_CHANNEL_STATE_IDLE)

@@ -3,6 +3,7 @@ package client
 import (
 	"encoding/json"
 	"os"
+	"path/filepath"
 )
 
 type FileSchema struct {
@@ -22,7 +23,7 @@ type FileSchema struct {
 }
 
 func getDriverNetsocsDotJsonContent(path string) (*FileSchema, error) {
-	f, err := os.Open(path)
+	f, err := os.Open(filepath.Clean(path))
 	if err != nil {
 		return nil, err
 	}

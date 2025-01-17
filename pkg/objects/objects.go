@@ -2,21 +2,10 @@ package objects
 
 type ObjectRunner interface {
 	RegisterObject(object RegistrableObject) error
+	GetController() ObjectController
 }
 
 type SetupFunction func(RegistrableObject, ObjectController) error
-
-type ObjectController interface {
-	SetState(objectId string, state string) error
-	UpdateStateAttributes(objectId string, attributes map[string]interface{}) error
-	NewAction(action ObjectAction) error
-	CreateObject(RegistrableObject) error
-	ListenActionRequests() error
-	GetDriverhubHost() string
-	GetDriverKey() string
-	DisabledObject(objectId string) error
-	EnabledObject(objectId string) error
-}
 
 type ObjectMetadata struct {
 	ObjectID string            `json:"object_id"`
@@ -31,12 +20,4 @@ type ObjectMetadata struct {
 type ObjectAction struct {
 	Action string `json:"action"`
 	Domain string `json:"domain"`
-}
-
-type RegistrableObject interface {
-	Setup(ObjectController) error
-	GetAvailableStates() []string
-	GetAvailableActions() []ObjectAction
-	RunAction(action string, payload []byte) error
-	GetMetadata() ObjectMetadata
 }

@@ -8,6 +8,23 @@ type sensorObject struct {
 	metatada          ObjectMetadata
 	unitOfMeasurement string
 	controller        ObjectController
+	eventTypes        []EventType
+}
+
+// AddEventTypes implements SensorObject.
+func (s *sensorObject) AddEventTypes(eventTypes []EventType) error {
+	if s.controller == nil {
+		s.eventTypes = eventTypes
+		return nil
+	}
+	for i := range eventTypes {
+		e := eventTypes[i]
+		e.Domain = s.metatada.Domain
+		e.Origin = "driver"
+		eventTypes[i] = e
+
+	}
+	return s.controller.AddEventTypes(eventTypes)
 }
 
 // SetValue implements SensorObject.
@@ -60,12 +77,20 @@ func (s *sensorObject) RunAction(action string, payload []byte) error {
 // Setup implements RegistrableObject.
 func (s *sensorObject) Setup(oc ObjectController) error {
 	s.controller = oc
+	if s.setup == nil {
+		return nil
+	}
 	return s.setup(s, oc)
 }
 
-func NewSensorObject(sensorType SensorObjectType, unitOfMeasurement string, objectMetadata ObjectMetadata, setup SetupFunction) SensorObject {
+type NewSensorObjectParams struct {
+	Metadata ObjectMetadata
+	SetupFn  SetupFunction
+}
+
+func NewSensorObject(params NewSensorObjectParams) SensorObject {
 	return &sensorObject{
-		metatada: objectMetadata,
-		setup:    setup,
+		metatada: params.Metadata,
+		setup:    params.SetupFn,
 	}
 }

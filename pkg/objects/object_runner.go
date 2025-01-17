@@ -13,6 +13,11 @@ type objectRunner struct {
 	objectsMap map[string][]RegistrableObject
 }
 
+// GetController implements ObjectRunner.
+func (o *objectRunner) GetController() ObjectController {
+	return o.controller
+}
+
 type requestActionExecutionEventData struct {
 	Payload  map[string]interface{} `json:"payload"`
 	Domain   string                 `json:"domain"`
@@ -54,22 +59,11 @@ func (o *objectRunner) listenActions() {
 
 // RegisterObject implements objects.ObjectRunner.
 func (o *objectRunner) RegisterObject(object RegistrableObject) error {
-	var mustDisable bool = true
+
 	if err := o.controller.CreateObject(object); err != nil {
-		if strings.Contains(err.Error(), "ERR_ITEM_ALREADY_EXIST") {
-			mustDisable = false
-		} else {
+		if !strings.Contains(err.Error(), "ERR_ITEM_ALREADY_EXIST") {
 			return err
 		}
-	}
-
-	if mustDisable {
-		defer o.controller.DisabledObject(object.GetMetadata().ObjectID)
-	}
-
-	err := o.controller.EnabledObject(object.GetMetadata().ObjectID)
-	if err != nil {
-		return err
 	}
 
 	for _, action := range object.GetAvailableActions() {
@@ -81,6 +75,8 @@ func (o *objectRunner) RegisterObject(object RegistrableObject) error {
 	}
 
 	o.objectsMap[object.GetMetadata().Domain] = append(o.objectsMap[object.GetMetadata().Domain], object)
+
+	eventbus.Pubsub.Publish("SUBSCRIBE_OBJECTS_COMMANDS_LISTENING", struct{ Domain string }{Domain: object.GetMetadata().Domain})
 
 	return object.Setup(o.controller)
 }

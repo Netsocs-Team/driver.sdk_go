@@ -4,19 +4,63 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"reflect"
 	"strconv"
 	"strings"
 
 	"github.com/Netsocs-Team/driver.sdk_go/internal/eventbus"
+	"github.com/Netsocs-Team/driver.sdk_go/pkg/logger"
 	"github.com/go-resty/resty/v2"
 	"github.com/goccy/go-json"
 	"github.com/gorilla/websocket"
 )
 
+type ObjectController interface {
+	SetState(objectId string, state string) error
+	UpdateStateAttributes(objectId string, attributes map[string]interface{}) error
+	NewAction(action ObjectAction) error
+	CreateObject(RegistrableObject) error
+	ListenActionRequests() error
+	GetDriverhubHost() string
+	GetDriverKey() string
+	DisabledObject(objectId string) error
+	EnabledObject(objectId string) error
+	AddEventTypes(eventTypes []EventType) error
+}
+
 type objectController struct {
 	driverhub_host string
 	driver_key     string
 	httpClient     *resty.Client
+}
+
+// AddEventTypes implements ObjectController.
+func (o *objectController) AddEventTypes(eventTypes []EventType) error {
+	if len(eventTypes) == 0 {
+		return errors.New("event types cannot be empty")
+	}
+
+	for _, e := range eventTypes {
+		if e.EventType == "" {
+			return errors.New("event type cannot be empty")
+		}
+		if e.Domain == "" {
+			return errors.New("domain cannot be empty")
+		}
+
+		url := fmt.Sprintf("%s/objects/events/types/%s/%s", o.driverhub_host, e.Domain, e.EventType)
+		resp, err := o.httpClient.R().
+			SetHeader("Content-Type", "application/json").
+			SetBody(e).
+			Post(url)
+		if err != nil {
+			return err
+		}
+		if resp.StatusCode() >= 400 {
+			return errors.New(resp.String())
+		}
+	}
+	return nil
 }
 
 // DisabledObject implements ObjectController.
@@ -91,10 +135,13 @@ func (o *objectController) NewAction(action ObjectAction) error {
 type wsMessage struct {
 	EventType string `json:"event_type"`
 	Data      any    `json:"data"`
+	Domain    string `json:"domain"`
 }
 
 // ListenActionRequests implements ObjectController.
 func (o *objectController) ListenActionRequests() error {
+	_logger := logger.Logger()
+
 	url := strings.ReplaceAll(o.driverhub_host, "https", "wss")
 	url = strings.ReplaceAll(url, "http", "ws")
 
@@ -107,6 +154,16 @@ func (o *objectController) ListenActionRequests() error {
 	defer c.Close()
 
 	done := make(chan struct{})
+
+	eventbus.Pubsub.Subscribe("SUBSCRIBE_OBJECTS_COMMANDS_LISTENING", func(data interface{}) {
+		domain := reflect.ValueOf(data).FieldByName("Domain")
+		if domain.IsValid() {
+			err = c.WriteJSON(wsMessage{EventType: "REQUEST_SUBSCRIPTION_TO_DOMAIN", Domain: domain.String()})
+			if err != nil {
+				_logger.Error(err)
+			}
+		}
+	})
 
 	defer close(done)
 	for {

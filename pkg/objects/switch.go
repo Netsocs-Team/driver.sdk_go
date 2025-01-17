@@ -20,6 +20,11 @@ type switchObject struct {
 	controller    ObjectController
 }
 
+// AddEventTypes implements SwitchObject.
+func (s *switchObject) AddEventTypes(eventTypes []EventType) error {
+	panic("unimplemented")
+}
+
 // TurnOff implements SwitchObject.
 func (s *switchObject) TurnOff() error {
 	return s.controller.SetState(s.metadata.ObjectID, SWITCH_STATE_OFF)
@@ -78,21 +83,21 @@ type SwitchActions struct {
 	Setup   func(this RegistrableObject, oc ObjectController) error
 }
 
-func NewSwitchObject(objectMetadata ObjectMetadata, actions SwitchActions) (SwitchObject, error) {
-	if objectMetadata.ObjectID == "" {
-		return nil, ErrObjectIdMandatory
-	} else if objectMetadata.Name == "" {
-		return nil, ErrNameMandatory
-	} else if objectMetadata.Domain == "" {
-		return nil, ErrDomainMandatory
-	} else if objectMetadata.DeviceID == "" {
-		return nil, ErrDeviceIdMandatory
-	} else if actions.TurnOn == nil || actions.TurnOff == nil || actions.Setup == nil {
-		return nil, ErrActionsMandatory
-	}
+type NewSwitchObjectParams struct {
+	Metadata      ObjectMetadata
+	TurnOnMethod  func(this RegistrableObject, oc ObjectController) error
+	TurnOffMethod func(this RegistrableObject, oc ObjectController) error
+	SetupMethod   func(this RegistrableObject, oc ObjectController) error
+}
+
+func NewSwitchObject(params NewSwitchObjectParams) SwitchObject {
 
 	return &switchObject{
-		metadata:      objectMetadata,
-		switchActions: actions,
-	}, nil
+		metadata: params.Metadata,
+		switchActions: SwitchActions{
+			TurnOn:  params.TurnOnMethod,
+			TurnOff: params.TurnOffMethod,
+			Setup:   params.SetupMethod,
+		},
+	}
 }
