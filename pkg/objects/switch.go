@@ -20,6 +20,12 @@ type switchObject struct {
 	controller    ObjectController
 }
 
+// SetState implements SwitchObject.
+func (s *switchObject) SetState(state string) error {
+	return s.controller.SetState(s.metadata.ObjectID, state)
+
+}
+
 // AddEventTypes implements SwitchObject.
 func (s *switchObject) AddEventTypes(eventTypes []EventType) error {
 	panic("unimplemented")

@@ -12,6 +12,11 @@ type doorObject struct {
 	controller      ObjectController
 }
 
+// SetState implements DoorObject.
+func (d *doorObject) SetState(state string) error {
+	return d.controller.SetState(d.metadata.ObjectID, state)
+}
+
 const DOOR_STATE_OPEN = "door.state.open"
 const DOOR_STATE_CLOSE = "door.state.close"
 const DOOR_STATE_LOCK = "door.state.lock"
