@@ -35,6 +35,11 @@ type videoChannelObject struct {
 	metadata   ObjectMetadata
 }
 
+// SetState implements VideoChannelObject.
+func (v *videoChannelObject) SetState(state string) error {
+	panic("unimplemented")
+}
+
 // AddEventTypes implements VideoChannelObject.
 func (v *videoChannelObject) AddEventTypes(eventTypes []EventType) error {
 	panic("unimplemented")

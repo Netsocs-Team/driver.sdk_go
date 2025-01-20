@@ -18,4 +18,5 @@ type RegistrableObject interface {
 	GetAvailableActions() []ObjectAction
 	RunAction(action string, payload []byte) error
 	GetMetadata() ObjectMetadata
+	SetState(state string) error
 }
