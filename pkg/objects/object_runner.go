@@ -73,9 +73,17 @@ func (o *objectRunner) RegisterObject(object RegistrableObject) error {
 			}
 		}
 	}
-
-	o.objectsMap[object.GetMetadata().Domain] = append(o.objectsMap[object.GetMetadata().Domain], object)
-
+	var registerNew = true
+	existingObjects := o.objectsMap[object.GetMetadata().Domain]
+	for _, existingObject := range existingObjects {
+		if existingObject.GetMetadata().ObjectID == object.GetMetadata().ObjectID {
+			registerNew = false
+			break
+		}
+	}
+	if registerNew {
+		o.objectsMap[object.GetMetadata().Domain] = append(o.objectsMap[object.GetMetadata().Domain], object)
+	}
 	eventbus.Pubsub.Publish("SUBSCRIBE_OBJECTS_COMMANDS_LISTENING", struct{ Domain string }{Domain: object.GetMetadata().Domain})
 
 	return object.Setup(o.controller)
