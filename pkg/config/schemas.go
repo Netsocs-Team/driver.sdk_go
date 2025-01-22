@@ -530,8 +530,7 @@ type ExtraFieldType string
 
 const (
 	ExtraFieldTypeString  ExtraFieldType = "string"
-	ExtraFieldTypeInt     ExtraFieldType = "int"
-	ExtraFieldTypeFloat   ExtraFieldType = "float"
+	ExtraFieldTypeNumber  ExtraFieldType = "number"
 	ExtraFieldTypeBoolean ExtraFieldType = "boolean"
 )
 
