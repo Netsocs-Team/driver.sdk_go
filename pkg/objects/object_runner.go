@@ -22,7 +22,7 @@ type requestActionExecutionEventData struct {
 	Payload  map[string]interface{} `json:"payload"`
 	Domain   string                 `json:"domain"`
 	Action   string                 `json:"action"`
-	ObjectID string                 `json:"object_id"`
+	ObjectID []string               `json:"object_id"`
 }
 
 // SubscribeToActionsRequest implements objects.ObjectRunner.
@@ -41,10 +41,12 @@ func (o *objectRunner) listenActions() {
 		if objects == nil || len(objects) == 0 {
 			return
 		}
-		if req.ObjectID != "" {
+		if len(req.ObjectID) > 0 {
 			for _, obj := range objects {
-				if obj.GetMetadata().ObjectID == req.ObjectID {
-					obj.RunAction(req.Action, payloadBytes)
+				for _, objID := range req.ObjectID {
+					if obj.GetMetadata().ObjectID == objID {
+						obj.RunAction(req.Action, payloadBytes)
+					}
 				}
 			}
 		} else {
