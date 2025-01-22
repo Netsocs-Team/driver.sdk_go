@@ -42,6 +42,7 @@ const GET_VIDEO_IN_BLACK_AND_WHITE_STATUS NetsocsConfigKey = "getVideoInBlackAnd
 const SET_ACTION_UNLOCK_DEVICE NetsocsConfigKey = "setActionUnlockDevice"
 const GET_UNLOCK_DEVICE_STATUS NetsocsConfigKey = "getUnlockDeviceStatus"
 const GET_SUBDEVICES NetsocsConfigKey = "getSubdevices"
+const GET_EXTRA_DEVICE_FIELDS NetsocsConfigKey = "getExtraDeviceFields"
 const SET_ADD_ALARM_PARTITION_ZONE NetsocsConfigKey = "setAddAlarmPartitionZone"
 const SET_ADD_ALARM_USER NetsocsConfigKey = "setAddAlarmUser"
 const SET_ADD_PERSON_TO_AC NetsocsConfigKey = "setAddPersonToAC"
