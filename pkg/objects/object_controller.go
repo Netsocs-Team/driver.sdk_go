@@ -145,6 +145,10 @@ func (o *objectController) ListenActionRequests() error {
 	url := strings.ReplaceAll(o.driverhub_host, "https", "wss")
 	url = strings.ReplaceAll(url, "http", "ws")
 
+	if !strings.HasPrefix(url, "ws") && !strings.HasPrefix(url, "wss") {
+		url = fmt.Sprintf("ws://%s", url)
+	}
+
 	url = fmt.Sprintf("%s/objects/ws", url)
 
 	c, _, err := websocket.DefaultDialer.Dial(url, http.Header{})
