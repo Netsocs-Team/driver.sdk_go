@@ -38,14 +38,15 @@ func (c *ConfigMessage) GetRawMessage() []byte {
 }
 
 type ConfigMessageDeviceData struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-	IP       string `json:"ip_address_public"`
-	Port     int    `json:"port"`
-	IsSSL    bool   `json:"is_ssl"`
-	SSLPort  int    `json:"ssl_port"`
-	ID       int    `json:"id_device"`
-	ChildID  string `json:"child_id"`
+	Username    string                 `json:"username"`
+	Password    string                 `json:"password"`
+	IP          string                 `json:"ip_address_public"`
+	Port        int                    `json:"port"`
+	IsSSL       bool                   `json:"is_ssl"`
+	SSLPort     int                    `json:"ssl_port"`
+	ID          int                    `json:"id_device"`
+	ChildID     string                 `json:"child_id"`
+	Extrafields map[string]interface{} `json:"extrafields"`
 }
 
 var messages = make(chan *ConfigMessage)
