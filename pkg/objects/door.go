@@ -50,6 +50,7 @@ func (d *doorObject) GetAvailableStates() []string {
 
 // GetMetadata implements DoorObject.
 func (d *doorObject) GetMetadata() ObjectMetadata {
+	d.metadata.Type = DOOR_DOMAIN
 	return d.metadata
 }
 
