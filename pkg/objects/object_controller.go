@@ -245,6 +245,13 @@ func (o *objectController) SetState(objectId, state string) error {
 }
 
 func NewObjectController(driverhubHost string, driverKey string) ObjectController {
+	if driverhubHost == "" {
+		panic("driverhub host cannot be empty")
+	}
+
+	if !strings.HasPrefix(driverhubHost, "http") || !strings.HasPrefix(driverhubHost, "https") {
+		driverhubHost = fmt.Sprintf("http://%s", driverhubHost)
+	}
 
 	return &objectController{
 		driverhub_host: driverhubHost,
