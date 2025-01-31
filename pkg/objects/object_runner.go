@@ -1,11 +1,11 @@
 package objects
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/Netsocs-Team/driver.sdk_go/internal/eventbus"
 	"github.com/goccy/go-json"
+	"go.uber.org/zap"
 )
 
 type objectRunner struct {
@@ -28,19 +28,28 @@ type requestActionExecutionEventData struct {
 // SubscribeToActionsRequest implements objects.ObjectRunner.
 func (o *objectRunner) listenActions() {
 	eventbus.Pubsub.Subscribe("REQUEST_ACTION_EXECUTION", func(data interface{}) {
-		fmt.Println("Received action request")
+		logger := zap.L().Named("object_runner")
 		req := requestActionExecutionEventData{}
 		jsoncontent, _ := json.Marshal(data)
 		err := json.Unmarshal(jsoncontent, &req)
 		if err != nil {
+			logger.Error("failed to unmarshal request action execution data", zap.Error(err))
 			return
 		}
-		payloadBytes, _ := json.Marshal(req.Payload)
+		payloadBytes, err := json.Marshal(req.Payload)
+		if err != nil {
+			logger.Error("failed to marshal payload", zap.Error(err))
+			return
+		}
 
 		objects := o.objectsMap[req.Domain]
 		if objects == nil || len(objects) == 0 {
+			logger.Info("no objects found for domain", zap.String("domain", req.Domain))
 			return
 		}
+
+		logger.Info("running action", zap.String("action", req.Action), zap.String("domain", req.Domain), zap.Strings("object_id", req.ObjectID), zap.ByteString("payload", payloadBytes))
+
 		if len(req.ObjectID) > 0 {
 			for _, obj := range objects {
 				for _, objID := range req.ObjectID {
