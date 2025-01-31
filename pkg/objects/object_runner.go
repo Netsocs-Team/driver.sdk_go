@@ -54,7 +54,7 @@ func (o *objectRunner) listenActions() {
 			return
 		}
 
-		sugar.Info("running action", zap.String("action", req.Action), zap.String("domain", req.Domain), zap.Strings("object_id", req.ObjectID), zap.ByteString("payload", payloadBytes))
+		sugar.Info("running action", zap.String("action", req.Action), zap.String("domain", req.Domain), zap.Strings("object_id", req.ObjectID), zap.String("payload", string(payloadBytes)))
 
 		if len(req.ObjectID) > 0 {
 			for _, obj := range objects {
