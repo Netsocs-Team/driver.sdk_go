@@ -28,27 +28,33 @@ type requestActionExecutionEventData struct {
 // SubscribeToActionsRequest implements objects.ObjectRunner.
 func (o *objectRunner) listenActions() {
 	eventbus.Pubsub.Subscribe("REQUEST_ACTION_EXECUTION", func(data interface{}) {
-		logger := zap.L().Named("object_runner")
+		logger, err := zap.NewProduction()
+		if err != nil {
+			panic(err)
+		}
+		defer logger.Sync() // flushes buffer, if any
+		sugar := logger.Sugar()
+
 		req := requestActionExecutionEventData{}
 		jsoncontent, _ := json.Marshal(data)
-		err := json.Unmarshal(jsoncontent, &req)
+		err = json.Unmarshal(jsoncontent, &req)
 		if err != nil {
-			logger.Error("failed to unmarshal request action execution data", zap.Error(err))
+			sugar.Error("failed to unmarshal request action execution data", zap.Error(err))
 			return
 		}
 		payloadBytes, err := json.Marshal(req.Payload)
 		if err != nil {
-			logger.Error("failed to marshal payload", zap.Error(err))
+			sugar.Error("failed to marshal payload", zap.Error(err))
 			return
 		}
 
 		objects := o.objectsMap[req.Domain]
 		if objects == nil || len(objects) == 0 {
-			logger.Info("no objects found for domain", zap.String("domain", req.Domain))
+			sugar.Info("no objects found for domain", zap.String("domain", req.Domain))
 			return
 		}
 
-		logger.Info("running action", zap.String("action", req.Action), zap.String("domain", req.Domain), zap.Strings("object_id", req.ObjectID), zap.ByteString("payload", payloadBytes))
+		sugar.Info("running action", zap.String("action", req.Action), zap.String("domain", req.Domain), zap.Strings("object_id", req.ObjectID), zap.ByteString("payload", payloadBytes))
 
 		if len(req.ObjectID) > 0 {
 			for _, obj := range objects {
