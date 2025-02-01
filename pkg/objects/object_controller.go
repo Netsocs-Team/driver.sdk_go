@@ -185,13 +185,16 @@ func (o *objectController) ListenActionRequests() error {
 }
 
 type newObjectRequest struct {
-	ID       string   `json:"id"`
-	Domain   string   `json:"domain"`
-	Name     string   `json:"name"`
-	Tags     []string `json:"tags"`
-	Type     string   `json:"type"`
-	DeviceID int      `json:"device_id"`
-	Enabled  bool     `json:"enabled"`
+	ID               string   `json:"id"`
+	Domain           string   `json:"domain"`
+	Name             string   `json:"name"`
+	Tags             []string `json:"tags"`
+	Type             string   `json:"type"`
+	DeviceID         int      `json:"device_id"`
+	Enabled          bool     `json:"enabled"`
+	StatesAvailable  []string `json:"states_available"`
+	EventsAvailable  []string `json:"events_available"`
+	ActionsAvailable []string `json:"actions_available"`
 }
 
 // CreateObject implements ObjectController.
@@ -205,6 +208,17 @@ func (o *objectController) CreateObject(obj RegistrableObject) error {
 	req.Type = obj.GetMetadata().Type
 	req.Enabled = true
 	req.DeviceID, _ = strconv.Atoi(obj.GetMetadata().DeviceID)
+	req.EventsAvailable = []string{}
+	req.StatesAvailable = []string{}
+	req.ActionsAvailable = []string{}
+
+	for _, state := range obj.GetAvailableStates() {
+		req.StatesAvailable = append(req.StatesAvailable, state)
+	}
+
+	for _, action := range obj.GetAvailableActions() {
+		req.ActionsAvailable = append(req.ActionsAvailable, action.Action)
+	}
 
 	url := fmt.Sprintf("%s/objects", o.driverhub_host)
 	resp, err := o.httpClient.R().
@@ -249,7 +263,7 @@ func NewObjectController(driverhubHost string, driverKey string) ObjectControlle
 		panic("driverhub host cannot be empty")
 	}
 
-	if !strings.HasPrefix(driverhubHost, "http") || !strings.HasPrefix(driverhubHost, "https") {
+	if !strings.HasPrefix(driverhubHost, "http") && !strings.HasPrefix(driverhubHost, "https") {
 		driverhubHost = fmt.Sprintf("http://%s", driverhubHost)
 	}
 
