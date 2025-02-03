@@ -34,11 +34,11 @@ func (d *doorObject) GetAvailableActions() []ObjectAction {
 	return []ObjectAction{
 		{
 			Action: DOOR_ACTION_OPEN,
-			Domain: DOOR_DOMAIN,
+			Domain: d.metadata.Domain,
 		},
 		{
 			Action: DOOR_ACTION_CLOSE,
-			Domain: DOOR_DOMAIN,
+			Domain: d.metadata.Domain,
 		},
 	}
 }
