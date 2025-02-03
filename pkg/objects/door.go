@@ -86,7 +86,7 @@ type NewDoorObjectParams struct {
 }
 
 func NewDoorObject(params NewDoorObjectParams) DoorObject {
-	params.Metadata.Domain = DOOR_DOMAIN
+
 	return &doorObject{
 		metadata:        params.Metadata,
 		openDoorMethod:  params.OpenDoorMethod,
