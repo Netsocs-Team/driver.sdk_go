@@ -18,6 +18,8 @@ type RelativeTrackerObject interface {
 type relativeTrackerObject struct {
 	metadata   ObjectMetadata
 	controller ObjectController
+
+	setupFn func(this RelativeTrackerObject, controller ObjectController) error
 }
 
 // SetMovimingState implements RelativeTrackerObject.
@@ -100,10 +102,12 @@ func (r *relativeTrackerObject) Setup(controller ObjectController) error {
 
 type NewRelativeTrackerObjectProps struct {
 	Metadata ObjectMetadata
+	SetupFn  func(this RelativeTrackerObject, controller ObjectController) error
 }
 
 func NewRelativeTrackerObject(props NewRelativeTrackerObjectProps) RelativeTrackerObject {
 	return &relativeTrackerObject{
 		metadata: props.Metadata,
+		setupFn:  props.SetupFn,
 	}
 }
