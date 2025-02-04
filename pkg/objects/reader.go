@@ -14,6 +14,7 @@ const READER_ACTION_STOP = "reader.action.stop"
 const READER_ACTION_RESET = "reader.action.reset"
 const READER_ACTION_RESTART = "reader.action.restart"
 const READER_ACTION_STORE_QRS = "reader.action.store_qrs"
+const READER_ACTION_DELETE_QRS = "reader.action.delete_qrs"
 
 // domain
 const READER_DOMAIN = "reader"
@@ -36,8 +37,9 @@ type readerObject struct {
 	metadata   ObjectMetadata
 	controller ObjectController
 
-	setupFunc       func(this ReaderObject, controller ObjectController) error
-	storeCredential func(this ReaderObject, controller ObjectController, payload StoreQRsPayload) error
+	setupFunc        func(this ReaderObject, controller ObjectController) error
+	storeCredential  func(this ReaderObject, controller ObjectController, payload StoreQRsPayload) error
+	deleteCredential func(this ReaderObject, controller ObjectController, payload StoreQRsPayload) error
 }
 
 // GetAvailableActions implements ReaderObject.
@@ -61,6 +63,10 @@ func (r *readerObject) GetAvailableActions() []ObjectAction {
 		},
 		{
 			Action: READER_ACTION_STORE_QRS,
+			Domain: r.metadata.Domain,
+		},
+		{
+			Action: READER_ACTION_DELETE_QRS,
 			Domain: r.metadata.Domain,
 		},
 	}
@@ -111,17 +117,19 @@ type NewReaderObjectParams struct {
 	SetupFunc func(this ReaderObject, controller ObjectController) error
 	Metadata  ObjectMetadata
 
-	ReadMethod            func(this ReaderObject, controller ObjectController) error
-	StopMethod            func(this ReaderObject, controller ObjectController) error
-	ResetMethod           func(this ReaderObject, controller ObjectController) error
-	RestartMethod         func(this ReaderObject, controller ObjectController) error
-	StoreCredentialMethod func(this ReaderObject, controller ObjectController, payload StoreQRsPayload) error
+	ReadMethod             func(this ReaderObject, controller ObjectController) error
+	StopMethod             func(this ReaderObject, controller ObjectController) error
+	ResetMethod            func(this ReaderObject, controller ObjectController) error
+	RestartMethod          func(this ReaderObject, controller ObjectController) error
+	StoreCredentialMethod  func(this ReaderObject, controller ObjectController, payload StoreQRsPayload) error
+	DeleteCredentialMethod func(this ReaderObject, controller ObjectController, payload StoreQRsPayload) error
 }
 
 func NewReaderObject(params NewReaderObjectParams) ReaderObject {
 	return &readerObject{
-		metadata:        params.Metadata,
-		setupFunc:       params.SetupFunc,
-		storeCredential: params.StoreCredentialMethod,
+		metadata:         params.Metadata,
+		setupFunc:        params.SetupFunc,
+		storeCredential:  params.StoreCredentialMethod,
+		deleteCredential: params.DeleteCredentialMethod,
 	}
 }
