@@ -61,7 +61,7 @@ type readerObject struct {
 	deleteSmartCardCredentials func(this ReaderObject, controller ObjectController, payload SmartCardsPayload) error
 }
 
-// GetAvailableActions implements ReaderObject.
+// GetAvailableActions implements ReaderObject
 func (r *readerObject) GetAvailableActions() []ObjectAction {
 	return []ObjectAction{
 		{
