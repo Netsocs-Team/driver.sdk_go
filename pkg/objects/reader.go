@@ -23,24 +23,22 @@ const READER_ACTION_DELETE_SMARTCARDS = "reader.action.delete_smartcards"
 // domain
 const READER_DOMAIN = "reader"
 
-type PersonData struct {
-	PersonId string `json:"person_id"`
-	Name     string `json:"name"`
-}
-
 type QRsPayload struct {
-	PersonData
-	Values []string `json:"values"`
+	PersonId string   `json:"person_id"`
+	Name     string   `json:"name"`
+	Values   []string `json:"values"`
 }
 
 type FacesPayload struct {
-	PersonData
-	Values []string `json:"values"`
+	PersonId string   `json:"person_id"`
+	Name     string   `json:"name"`
+	Values   []string `json:"values"`
 }
 
 type SmartCardsPayload struct {
-	PersonData
-	Values []string `json:"values"`
+	PersonId string   `json:"person_id"`
+	Name     string   `json:"name"`
+	Values   []string `json:"values"`
 }
 
 type ReaderObject interface {
