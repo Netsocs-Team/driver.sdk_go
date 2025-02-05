@@ -24,7 +24,7 @@ const READER_ACTION_DELETE_SMARTCARDS = "reader.action.delete_smartcards"
 const READER_DOMAIN = "reader"
 
 type PersonData struct {
-	PersonId string `json:"personId"`
+	PersonId string `json:"person_id"`
 	Name     string `json:"name"`
 }
 
