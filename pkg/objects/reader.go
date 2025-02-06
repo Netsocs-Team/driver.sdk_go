@@ -120,19 +120,19 @@ type NewReaderObjectParams struct {
 	SetupFunc func(this ReaderObject, controller ObjectController) error
 	Metadata  ObjectMetadata
 
-	ReadMethod             func(this ReaderObject, controller ObjectController) error
-	StopMethod             func(this ReaderObject, controller ObjectController) error
-	ResetMethod            func(this ReaderObject, controller ObjectController) error
-	RestartMethod          func(this ReaderObject, controller ObjectController) error
-	StoreCredentialMethod  func(this ReaderObject, controller ObjectController, payload QRPayload) error
-	DeleteCredentialMethod func(this ReaderObject, controller ObjectController, payload QRPayload) error
+	ReadMethod                func(this ReaderObject, controller ObjectController) error
+	StopMethod                func(this ReaderObject, controller ObjectController) error
+	ResetMethod               func(this ReaderObject, controller ObjectController) error
+	RestartMethod             func(this ReaderObject, controller ObjectController) error
+	storeQRCredentialsMethod  func(this ReaderObject, controller ObjectController, payload QRPayload) error
+	deleteQRCredentialsMethod func(this ReaderObject, controller ObjectController, payload QRPayload) error
 }
 
 func NewReaderObject(params NewReaderObjectParams) ReaderObject {
 	return &readerObject{
 		metadata:            params.Metadata,
 		setupFunc:           params.SetupFunc,
-		storeQRCredentials:  params.StoreCredentialMethod,
-		deleteQRCredentials: params.DeleteCredentialMethod,
+		storeQRCredentials:  params.storeQRCredentialsMethod,
+		deleteQRCredentials: params.deleteQRCredentialsMethod,
 	}
 }
