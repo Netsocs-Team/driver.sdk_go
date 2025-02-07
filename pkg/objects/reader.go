@@ -1,6 +1,10 @@
 package objects
 
-import "github.com/goccy/go-json"
+import (
+	"fmt"
+
+	"github.com/goccy/go-json"
+)
 
 // states
 const READER_STATE_READING = "reader.state.reading"
@@ -15,9 +19,14 @@ const READER_ACTION_RESET = "reader.action.reset"
 const READER_ACTION_RESTART = "reader.action.restart"
 const READER_ACTION_STORE_QRS = "reader.action.store_qrs"
 const READER_ACTION_DELETE_QRS = "reader.action.delete_qrs"
+const READER_ACTION_DELETE_PERSON = "reader.action.delete_person"
 
 // domain
 const READER_DOMAIN = "reader"
+
+type DeletePersonPayload struct {
+	PersonId string `json:"person_id"`
+}
 
 type QRPayload struct {
 	PersonId string   `json:"person_id"`
@@ -33,9 +42,10 @@ type readerObject struct {
 	metadata   ObjectMetadata
 	controller ObjectController
 
-	setupFunc           func(this ReaderObject, controller ObjectController) error
-	storeQRCredentials  func(this ReaderObject, controller ObjectController, payload QRPayload) error
-	deleteQRCredentials func(this ReaderObject, controller ObjectController, payload QRPayload) error
+	setupFunc               func(this ReaderObject, controller ObjectController) error
+	storeQRCredentials      func(this ReaderObject, controller ObjectController, payload QRPayload) error
+	deleteQRCredentials     func(this ReaderObject, controller ObjectController, payload QRPayload) error
+	deletePersonCredentials func(this ReaderObject, controller ObjectController, payload DeletePersonPayload) error
 }
 
 // GetAvailableActions implements ReaderObject.
@@ -59,6 +69,14 @@ func (r *readerObject) GetAvailableActions() []ObjectAction {
 		},
 		{
 			Action: READER_ACTION_STORE_QRS,
+			Domain: r.metadata.Domain,
+		},
+		{
+			Action: READER_ACTION_DELETE_QRS,
+			Domain: r.metadata.Domain,
+		},
+		{
+			Action: READER_ACTION_DELETE_PERSON,
 			Domain: r.metadata.Domain,
 		},
 	}
@@ -90,10 +108,17 @@ func (r *readerObject) RunAction(action string, payload []byte) error {
 		if err := json.Unmarshal(payload, &deleteQrsPayload); err != nil {
 			return err
 		}
+		return r.deleteQRCredentials(r, r.controller, deleteQrsPayload)
 
+	case READER_ACTION_DELETE_PERSON:
+		deletePersonPayload := DeletePersonPayload{}
+		if err := json.Unmarshal(payload, &deletePersonPayload); err != nil {
+			return err
+		}
+		return r.deletePersonCredentials(r, r.controller, deletePersonPayload)
 	}
 
-	return nil
+	return fmt.Errorf("action %s not found", action)
 }
 
 // SetState implements ReaderObject.
@@ -122,13 +147,15 @@ type NewReaderObjectParams struct {
 	RestartMethod             func(this ReaderObject, controller ObjectController) error
 	StoreQRCredentialsMethod  func(this ReaderObject, controller ObjectController, payload QRPayload) error
 	DeleteQRCredentialsMethod func(this ReaderObject, controller ObjectController, payload QRPayload) error
+	DeletePersonCredentials   func(this ReaderObject, controller ObjectController, payload DeletePersonPayload) error
 }
 
 func NewReaderObject(params NewReaderObjectParams) ReaderObject {
 	return &readerObject{
-		metadata:            params.Metadata,
-		setupFunc:           params.SetupFunc,
-		storeQRCredentials:  params.StoreQRCredentialsMethod,
-		deleteQRCredentials: params.DeleteQRCredentialsMethod,
+		metadata:                params.Metadata,
+		setupFunc:               params.SetupFunc,
+		storeQRCredentials:      params.StoreQRCredentialsMethod,
+		deleteQRCredentials:     params.DeleteQRCredentialsMethod,
+		deletePersonCredentials: params.DeletePersonCredentials,
 	}
 }
