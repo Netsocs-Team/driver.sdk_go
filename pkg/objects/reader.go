@@ -19,14 +19,10 @@ const READER_ACTION_DELETE_QRS = "reader.action.delete_qrs"
 // domain
 const READER_DOMAIN = "reader"
 
-type PersonData struct {
-	PersonId string `json:"personId"`
-	Name     string `json:"name"`
-}
-
 type QRPayload struct {
-	PersonData
-	Values []string `json:"values"`
+	PersonId string   `json:"person_id"`
+	Name     string   `json:"name"`
+	Values   []string `json:"values"`
 }
 
 type ReaderObject interface {
