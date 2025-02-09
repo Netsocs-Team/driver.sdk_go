@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"strings"
 
 	"github.com/Netsocs-Team/driver.sdk_go/pkg/config"
 	"github.com/Netsocs-Team/driver.sdk_go/pkg/objects"
@@ -115,11 +114,7 @@ func (c *NetsocsDriverClient) RegisterObject(obj objects.RegistrableObject) erro
 
 func (c *NetsocsDriverClient) AddEventTypes(eventTypes []objects.EventType) error {
 	err := c.objectsRunner.GetController().AddEventTypes(eventTypes)
-	if err != nil {
-		if strings.Contains(err.Error(), "Duplicate entry") {
-			return nil
-		}
-	}
+
 	return err
 }
 

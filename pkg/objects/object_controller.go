@@ -57,7 +57,11 @@ func (o *objectController) AddEventTypes(eventTypes []EventType) error {
 			return err
 		}
 		if resp.StatusCode() >= 400 {
-			return errors.New(resp.String())
+			content := resp.String()
+			if strings.Contains(content, "Duplicate entry") {
+				continue
+			}
+			return errors.New(content)
 		}
 	}
 	return nil
