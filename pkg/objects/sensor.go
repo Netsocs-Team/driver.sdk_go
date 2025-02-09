@@ -38,7 +38,7 @@ func (s *sensorObject) AddEventTypes(eventTypes []EventType) error {
 // SetValue implements SensorObject.
 func (s *sensorObject) SetValue(value string) error {
 	if s.controller != nil {
-		return s.controller.UpdateStateAttributes(s.metatada.ObjectID, map[string]interface{}{"value": value})
+		return s.controller.UpdateStateAttributes(s.metatada.ObjectID, map[string]string{"value": value})
 	}
 	return errors.New("controller not set")
 }

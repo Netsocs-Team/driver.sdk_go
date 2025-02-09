@@ -1,5 +1,7 @@
 package objects
 
+import "strconv"
+
 const RELATIVE_TRACKER_STATE_MOVING = "relative_tracker.state.moving"
 const RELATIVE_TRACKER_STATE_NO_SIGNAL = "relative_tracker.state.no_signal"
 
@@ -55,28 +57,28 @@ func (r *relativeTrackerObject) RunAction(action string, payload []byte) error {
 
 // SetAcceleration implements RelativeTrackerObject.
 func (r *relativeTrackerObject) SetAcceleration(x float64, y float64, z float64) error {
-	return r.controller.UpdateStateAttributes(r.metadata.ObjectID, map[string]interface{}{
-		"acceleration_x": x,
-		"acceleration_y": y,
-		"acceleration_z": z,
+	return r.controller.UpdateStateAttributes(r.metadata.ObjectID, map[string]string{
+		"acceleration_x": strconv.FormatFloat(x, 'f', -1, 64),
+		"acceleration_y": strconv.FormatFloat(y, 'f', -1, 64),
+		"acceleration_z": strconv.FormatFloat(z, 'f', -1, 64),
 	})
 }
 
 // SetCoords implements RelativeTrackerObject.
 func (r *relativeTrackerObject) SetCoords(x float64, y float64, z float64) error {
-	return r.controller.UpdateStateAttributes(r.metadata.ObjectID, map[string]interface{}{
-		"position_x": x,
-		"position_y": y,
-		"position_z": z,
+	return r.controller.UpdateStateAttributes(r.metadata.ObjectID, map[string]string{
+		"position_x": strconv.FormatFloat(x, 'f', -1, 64),
+		"position_y": strconv.FormatFloat(y, 'f', -1, 64),
+		"position_z": strconv.FormatFloat(z, 'f', -1, 64),
 	})
 }
 
 // SetSize implements RelativeTrackerObject.
 func (r *relativeTrackerObject) SetSize(x float64, y float64, z float64) error {
-	return r.controller.UpdateStateAttributes(r.metadata.ObjectID, map[string]interface{}{
-		"size_x": x,
-		"size_y": y,
-		"size_z": z,
+	return r.controller.UpdateStateAttributes(r.metadata.ObjectID, map[string]string{
+		"size_x": strconv.FormatFloat(x, 'f', -1, 64),
+		"size_y": strconv.FormatFloat(y, 'f', -1, 64),
+		"size_z": strconv.FormatFloat(z, 'f', -1, 64),
 	})
 }
 
@@ -87,10 +89,10 @@ func (r *relativeTrackerObject) SetState(state string) error {
 
 // SetVelocity implements RelativeTrackerObject.
 func (r *relativeTrackerObject) SetVelocity(x float64, y float64, z float64) error {
-	return r.controller.UpdateStateAttributes(r.metadata.ObjectID, map[string]interface{}{
-		"velocity_x": x,
-		"velocity_y": y,
-		"velocity_z": z,
+	return r.controller.UpdateStateAttributes(r.metadata.ObjectID, map[string]string{
+		"velocity_x": strconv.FormatFloat(x, 'f', -1, 64),
+		"velocity_y": strconv.FormatFloat(y, 'f', -1, 64),
+		"velocity_z": strconv.FormatFloat(z, 'f', -1, 64),
 	})
 }
 

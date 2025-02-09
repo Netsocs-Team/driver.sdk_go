@@ -67,12 +67,12 @@ func (v *videoChannelObject) SetModeUnknown() error {
 
 // PrimaryStream implements VideoChannelObject.
 func (v *videoChannelObject) PrimaryStream(streamId string) error {
-	return v.controller.UpdateStateAttributes(v.GetMetadata().ObjectID, map[string]interface{}{"primary_stream": streamId})
+	return v.controller.UpdateStateAttributes(v.GetMetadata().ObjectID, map[string]string{"primary_stream": streamId})
 }
 
 // SecundaryStream implements VideoChannelObject.
 func (v *videoChannelObject) SecondaryStream(streamId string) error {
-	return v.controller.UpdateStateAttributes(v.GetMetadata().ObjectID, map[string]interface{}{"secondary_stream": streamId})
+	return v.controller.UpdateStateAttributes(v.GetMetadata().ObjectID, map[string]string{"secondary_stream": streamId})
 }
 
 // GetAvailableActions implements VideoChannelObject.

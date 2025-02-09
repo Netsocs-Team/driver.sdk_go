@@ -17,7 +17,7 @@ import (
 
 type ObjectController interface {
 	SetState(objectId string, state string) error
-	UpdateStateAttributes(objectId string, attributes map[string]interface{}) error
+	UpdateStateAttributes(objectId string, attributes map[string]string) error
 	NewAction(action ObjectAction) error
 	CreateObject(RegistrableObject) error
 	ListenActionRequests() error
@@ -102,9 +102,9 @@ func (o *objectController) GetDriverhubHost() string {
 }
 
 // UpdateStateAttributes implements ObjectController.
-func (o *objectController) UpdateStateAttributes(objectId string, attributes map[string]interface{}) error {
+func (o *objectController) UpdateStateAttributes(objectId string, attributes map[string]string) error {
 	url := fmt.Sprintf("%s/objects/states/%s", o.driverhub_host, objectId)
-	body := map[string]map[string]interface{}{"state_additional_properties": attributes}
+	body := map[string]map[string]string{"state_additional_properties": attributes}
 	_, err := o.httpClient.R().
 		SetHeader("Content-Type", "application/json").
 		SetBody(body).

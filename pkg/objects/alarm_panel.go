@@ -51,7 +51,7 @@ type alarmPanelObject struct {
 
 // SetBypassedZones implements AlarmPanelObject.
 func (a *alarmPanelObject) SetBypassedZones(zones []string) error {
-	return a.controller.UpdateStateAttributes(a.GetMetadata().ObjectID, map[string]interface{}{
+	return a.controller.UpdateStateAttributes(a.GetMetadata().ObjectID, map[string]string{
 		"bypassed_zones": strings.Join(zones, ","),
 	})
 }
