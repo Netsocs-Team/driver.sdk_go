@@ -99,6 +99,9 @@ func (r *relativeTrackerObject) SetVelocity(x float64, y float64, z float64) err
 // Setup implements RelativeTrackerObject.
 func (r *relativeTrackerObject) Setup(controller ObjectController) error {
 	r.controller = controller
+	if r.setupFn != nil {
+		return r.setupFn(r, controller)
+	}
 	return nil
 }
 
