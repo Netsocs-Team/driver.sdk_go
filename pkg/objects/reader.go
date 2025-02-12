@@ -40,6 +40,11 @@ type readerObject struct {
 	storeCredential func(this ReaderObject, controller ObjectController, payload StoreQRsPayload) error
 }
 
+// UpdateStateAttributes implements ReaderObject.
+func (r *readerObject) UpdateStateAttributes(attributes map[string]string) error {
+	return r.controller.UpdateStateAttributes(r.metadata.ObjectID, attributes)
+}
+
 // GetAvailableActions implements ReaderObject.
 func (r *readerObject) GetAvailableActions() []ObjectAction {
 	return []ObjectAction{

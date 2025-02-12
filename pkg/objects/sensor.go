@@ -11,6 +11,11 @@ type sensorObject struct {
 	eventTypes        []EventType
 }
 
+// UpdateStateAttributes implements SensorObject.
+func (s *sensorObject) UpdateStateAttributes(attributes map[string]string) error {
+	return s.controller.UpdateStateAttributes(s.metatada.ObjectID, attributes)
+}
+
 // SetState implements SensorObject.
 func (s *sensorObject) SetState(state string) error {
 	if s.controller == nil {

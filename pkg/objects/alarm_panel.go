@@ -49,6 +49,11 @@ type alarmPanelObject struct {
 	setupFn     func(alarmPanelObject AlarmPanelObject, oc ObjectController) error
 }
 
+// UpdateStateAttributes implements AlarmPanelObject.
+func (a *alarmPanelObject) UpdateStateAttributes(attributes map[string]string) error {
+	return a.controller.UpdateStateAttributes(a.GetMetadata().ObjectID, attributes)
+}
+
 // SetBypassedZones implements AlarmPanelObject.
 func (a *alarmPanelObject) SetBypassedZones(zones []string) error {
 	return a.controller.UpdateStateAttributes(a.GetMetadata().ObjectID, map[string]string{

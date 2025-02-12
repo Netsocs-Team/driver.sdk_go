@@ -24,6 +24,11 @@ type relativeTrackerObject struct {
 	setupFn func(this RelativeTrackerObject, controller ObjectController) error
 }
 
+// UpdateStateAttributes implements RelativeTrackerObject.
+func (r *relativeTrackerObject) UpdateStateAttributes(attributes map[string]string) error {
+	return r.controller.UpdateStateAttributes(r.metadata.ObjectID, attributes)
+}
+
 // SetMovimingState implements RelativeTrackerObject.
 func (r *relativeTrackerObject) SetMovimingState() error {
 	return r.SetState(RELATIVE_TRACKER_STATE_MOVING)

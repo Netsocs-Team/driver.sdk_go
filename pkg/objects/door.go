@@ -12,6 +12,11 @@ type doorObject struct {
 	controller      ObjectController
 }
 
+// UpdateStateAttributes implements DoorObject.
+func (d *doorObject) UpdateStateAttributes(attributes map[string]string) error {
+	return d.controller.UpdateStateAttributes(d.metadata.ObjectID, attributes)
+}
+
 // SetState implements DoorObject.
 func (d *doorObject) SetState(state string) error {
 	return d.controller.SetState(d.metadata.ObjectID, state)

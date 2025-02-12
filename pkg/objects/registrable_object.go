@@ -19,4 +19,5 @@ type RegistrableObject interface {
 	RunAction(action string, payload []byte) error
 	GetMetadata() ObjectMetadata
 	SetState(state string) error
+	UpdateStateAttributes(attributes map[string]string) error
 }

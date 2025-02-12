@@ -35,6 +35,11 @@ type videoChannelObject struct {
 	metadata   ObjectMetadata
 }
 
+// UpdateStateAttributes implements VideoChannelObject.
+func (v *videoChannelObject) UpdateStateAttributes(attributes map[string]string) error {
+	return v.controller.UpdateStateAttributes(v.GetMetadata().ObjectID, attributes)
+}
+
 // SetState implements VideoChannelObject.
 func (v *videoChannelObject) SetState(state string) error {
 	panic("unimplemented")

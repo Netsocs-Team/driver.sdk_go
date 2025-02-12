@@ -20,6 +20,11 @@ type switchObject struct {
 	controller    ObjectController
 }
 
+// UpdateStateAttributes implements SwitchObject.
+func (s *switchObject) UpdateStateAttributes(attributes map[string]string) error {
+	return s.controller.UpdateStateAttributes(s.metadata.ObjectID, attributes)
+}
+
 // SetState implements SwitchObject.
 func (s *switchObject) SetState(state string) error {
 	return s.controller.SetState(s.metadata.ObjectID, state)
