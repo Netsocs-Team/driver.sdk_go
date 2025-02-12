@@ -44,16 +44,25 @@ type rtsp2StreamIdRequest struct {
 	Payload  struct {
 		RtspSource string `json:"rtsp_source"`
 		StreamID   string `json:"stream_id"`
+		Record     bool   `json:"record"`
 	} `json:"payload"`
 }
 
-func (n *NetsocsDriverClient) RTSPToStreamID(rtsp string, streamID string) (videoEngine string, err error) {
+type RTSPToStreamIDOpts struct {
+	Record bool
+}
+
+func (n *NetsocsDriverClient) RTSPToStreamID(rtsp string, streamID string, opts ...RTSPToStreamIDOpts) (videoEngine string, err error) {
 	videoEngineDefaultId := "netsocs_native.video_engine.default"
 	videoEngineDefaultDomain := "netsocs_native.video_engine"
 	req := rtsp2StreamIdRequest{}
 	req.ObjectID = []string{videoEngineDefaultId}
 	req.Payload.RtspSource = rtsp
 	req.Payload.StreamID = streamID
+
+	if len(opts) > 0 {
+		req.Payload.Record = opts[0].Record
+	}
 
 	resp, err := resty.New().R().SetBody(req).Post(fmt.Sprintf("%s/objects/actions/executions/%s/rtsp_to_stream_id", n.driverHubHost, videoEngineDefaultDomain))
 
