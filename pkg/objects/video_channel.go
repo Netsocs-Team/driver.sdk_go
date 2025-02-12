@@ -1,5 +1,7 @@
 package objects
 
+import "strconv"
+
 const VIDEO_CHANNEL_STATE_STREAMING = "video_channel.state.streaming"
 const VIDEO_CHANNEL_STATE_RECORDING = "video_channel.state.recording"
 const VIDEO_CHANNEL_STATE_IDLE = "video_channel.state.idle"
@@ -33,6 +35,11 @@ type videoChannelObject struct {
 	setup      func(VideoChannelObject, ObjectController) error
 	controller ObjectController
 	metadata   ObjectMetadata
+
+	streamId      string
+	subStreamId   string
+	ptz           bool
+	videoEngineId string
 }
 
 // UpdateStateAttributes implements VideoChannelObject.
@@ -112,12 +119,38 @@ func (v *videoChannelObject) RunAction(action string, payload []byte) error {
 // Setup implements VideoChannelObject.
 func (v *videoChannelObject) Setup(oc ObjectController) error {
 	v.controller = oc
-	return v.setup(v, oc)
+
+	v.UpdateStateAttributes(map[string]string{
+		"video_engine_id": v.videoEngineId,
+		"stream_id":       v.streamId,
+		"sub_stream_id":   v.subStreamId,
+		"ptz":             strconv.FormatBool(v.ptz),
+	})
+
+	if v.setup != nil {
+		return v.setup(v, oc)
+	}
+	return nil
+
 }
 
-func NewVideoChannelObject(metadata ObjectMetadata, setup func(VideoChannelObject, ObjectController) error) VideoChannelObject {
+type NewVideoChannelObjectProps struct {
+	Metadata ObjectMetadata
+
+	StreamID    string
+	SubstreamID string
+	VideoEngine string
+	PTZ         bool
+	Recording   bool
+}
+
+func NewVideoChannelObject(props NewVideoChannelObjectProps) VideoChannelObject {
 	return &videoChannelObject{
-		metadata: metadata,
-		setup:    setup,
+		metadata: props.Metadata,
+
+		streamId:      props.StreamID,
+		subStreamId:   props.SubstreamID,
+		ptz:           props.PTZ,
+		videoEngineId: props.VideoEngine,
 	}
 }

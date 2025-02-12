@@ -39,24 +39,31 @@ func (n *NetsocsDriverClient) checkVersion() error {
 	return nil
 }
 
-func (n *NetsocsDriverClient) RTSPToStreamID(rtsp string, name string) (string, error) {
-	type responseSchema struct {
-		StreamID string `json:"stream_id"`
-	}
-	responseBody := responseSchema{}
-	client := resty.New()
-	resp, err := client.R().
-		SetHeader("Content-Type", "application/json").
-		SetBody(map[string]string{"source": rtsp, "name": name}).
-		Post(fmt.Sprintf("%s/objects/video-channels/encoded-sources", n.driverHubHost))
+type rtsp2StreamIdRequest struct {
+	ObjectID []string `json:"object_id"`
+	Payload  struct {
+		RtspSource string `json:"rtsp_source"`
+		StreamID   string `json:"stream_id"`
+	} `json:"payload"`
+}
+
+func (n *NetsocsDriverClient) RTSPToStreamID(rtsp string, streamID string) (videoEngine string, err error) {
+	videoEngineDefaultId := "netsocs_native.video_engine.default"
+	req := rtsp2StreamIdRequest{}
+	req.ObjectID = []string{videoEngineDefaultId}
+	req.Payload.RtspSource = rtsp
+	req.Payload.StreamID = streamID
+
+	resp, err := resty.New().R().SetBody(req).Post(fmt.Sprintf("%s/objects/actions/executions/%s/rtsp_to_stream_id", n.driverHubHost, videoEngineDefaultId))
 
 	if err != nil {
 		return "", err
 	}
 
-	if err := json.Unmarshal(resp.Body(), &responseBody); err != nil {
-		return "", err
+	if resp.StatusCode() >= 400 {
+		return "", fmt.Errorf("error converting rtsp to stream id: %s", resp.String())
 	}
 
-	return responseBody.StreamID, nil
+	return videoEngineDefaultId, nil
+
 }
