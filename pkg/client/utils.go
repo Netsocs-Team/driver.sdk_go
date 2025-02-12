@@ -49,12 +49,13 @@ type rtsp2StreamIdRequest struct {
 
 func (n *NetsocsDriverClient) RTSPToStreamID(rtsp string, streamID string) (videoEngine string, err error) {
 	videoEngineDefaultId := "netsocs_native.video_engine.default"
+	videoEngineDefaultDomain := "netsocs_native.video_engine"
 	req := rtsp2StreamIdRequest{}
 	req.ObjectID = []string{videoEngineDefaultId}
 	req.Payload.RtspSource = rtsp
 	req.Payload.StreamID = streamID
 
-	resp, err := resty.New().R().SetBody(req).Post(fmt.Sprintf("%s/objects/actions/executions/%s/rtsp_to_stream_id", n.driverHubHost, videoEngineDefaultId))
+	resp, err := resty.New().R().SetBody(req).Post(fmt.Sprintf("%s/objects/actions/executions/%s/rtsp_to_stream_id", n.driverHubHost, videoEngineDefaultDomain))
 
 	if err != nil {
 		return "", err
