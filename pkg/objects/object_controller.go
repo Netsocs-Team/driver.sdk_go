@@ -26,12 +26,44 @@ type ObjectController interface {
 	DisabledObject(objectId string) error
 	EnabledObject(objectId string) error
 	AddEventTypes(eventTypes []EventType) error
+	Increment(objectId string) error
+	Decrement(objectId string) error
 }
 
 type objectController struct {
 	driverhub_host string
 	driver_key     string
 	httpClient     *resty.Client
+}
+
+// Increment implements ObjectController.
+func (o *objectController) Increment(objectId string) error {
+	url := fmt.Sprintf("%s/objects/states/%s/increment", o.driverhub_host, objectId)
+	resp, err := o.httpClient.R().
+		SetHeader("Content-Type", "application/json").
+		Put(url)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode() >= 400 {
+		return errors.New(resp.String())
+	}
+	return nil
+}
+
+// Decrement implements ObjectController.
+func (o *objectController) Decrement(objectId string) error {
+	url := fmt.Sprintf("%s/objects/states/%s/decrement", o.driverhub_host, objectId)
+	resp, err := o.httpClient.R().
+		SetHeader("Content-Type", "application/json").
+		Put(url)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode() >= 400 {
+		return errors.New(resp.String())
+	}
+	return nil
 }
 
 // AddEventTypes implements ObjectController.

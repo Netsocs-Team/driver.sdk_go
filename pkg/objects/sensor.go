@@ -11,6 +11,26 @@ type sensorObject struct {
 	eventTypes        []EventType
 }
 
+// Decrement implements SensorObject.
+func (s *sensorObject) Decrement() error {
+	return s.controller.Decrement(s.metatada.ObjectID)
+}
+
+// Increment implements SensorObject.
+func (s *sensorObject) Increment() error {
+	return s.controller.Increment(s.metatada.ObjectID)
+}
+
+// SetSensorType implements SensorObject.
+func (s *sensorObject) SetSensorType(sensorType SensorObjectType) error {
+	return s.UpdateStateAttributes(map[string]string{"sensor_type": string(sensorType)})
+}
+
+// SetUnitOfMeasurement implements SensorObject.
+func (s *sensorObject) SetUnitOfMeasurement(unitOfMeasurement string) error {
+	return s.UpdateStateAttributes(map[string]string{"unit_of_measurement": unitOfMeasurement})
+}
+
 // UpdateStateAttributes implements SensorObject.
 func (s *sensorObject) UpdateStateAttributes(attributes map[string]string) error {
 	return s.controller.UpdateStateAttributes(s.metatada.ObjectID, attributes)
@@ -64,6 +84,10 @@ const SENSOR_STATE_TOTAL_INCREASING = "sensor.state.total_increasing"
 type SensorObject interface {
 	RegistrableObject
 	SetValue(value string) error
+	SetSensorType(sensorType SensorObjectType) error
+	SetUnitOfMeasurement(unitOfMeasurement string) error
+	Increment() error
+	Decrement() error
 }
 
 // GetAvailableActions implements RegistrableObject.
