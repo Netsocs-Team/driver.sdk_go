@@ -23,14 +23,14 @@ type VideoChannelActionPtzControlPayload struct {
 }
 
 type VideoClipActionPayload struct {
-	StartTimestamp string  `json:"start_timestamp"`
-	EndTimestamp   string  `json:"end_timestamp"`
-	Resolution     *string `json:"resolution,omitempty"` //"1920x1080"
+	StartTimestamp string `json:"start_timestamp"`
+	EndTimestamp   string `json:"end_timestamp"`
+	Resolution     string `json:"resolution,omitempty"` //"1920x1080"
 }
 
 type SnapshotActionPayload struct {
-	Timestamp  string  `json:"timestamp"`
-	Resolution *string `json:"resolution,omitempty"` //"1920x1080"
+	Timestamp  string `json:"timestamp"`
+	Resolution string `json:"resolution,omitempty"` //"1920x1080"
 }
 
 type VideoChannelActionPtzControlPayloadDirection string
