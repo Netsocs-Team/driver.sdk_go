@@ -186,7 +186,7 @@ type NewVideoChannelObjectProps struct {
 
 	SetupFn     func(VideoChannelObject, ObjectController) error
 	SnapshotFn  func(VideoChannelObject, ObjectController, SnapshotActionPayload) error
-	VideoClipFn func(VideoChannelObject, ObjectController, VideoClipActionPayload) error
+	VideoclipFn func(VideoChannelObject, ObjectController, VideoClipActionPayload) error
 	PtzFn       func(VideoChannelObject, ObjectController, VideoChannelActionPtzControlPayload) error
 }
 
@@ -200,7 +200,7 @@ func NewVideoChannelObject(props NewVideoChannelObjectProps) VideoChannelObject 
 		videoEngineId: props.VideoEngine,
 		setupFn:       props.SetupFn,
 		snapshotFn:    props.SnapshotFn,
-		videoclipFn:   props.VideoClipFn,
+		videoclipFn:   props.VideoclipFn,
 		ptzFn:         props.PtzFn,
 	}
 }
