@@ -1,6 +1,10 @@
 package objects
 
-import "strconv"
+import (
+	"strconv"
+
+	"github.com/goccy/go-json"
+)
 
 const VIDEO_CHANNEL_STATE_STREAMING = "video_channel.state.streaming"
 const VIDEO_CHANNEL_STATE_RECORDING = "video_channel.state.recording"
@@ -8,6 +12,7 @@ const VIDEO_CHANNEL_STATE_IDLE = "video_channel.state.idle"
 const VIDEO_CHANNEL_STATE_UNKNOWN = "video_channel.state.unknown"
 
 const VIDEO_CHANNEL_ACTION_SNAPSHOT = "video_channel.action.snapshot"
+const VIDEO_CHANNEL_ACTION_VIDEOCLIP = "video_channel.action.videoclip"
 const VIDEO_CHANNEL_ACTION_PTZ_CONTROL = "video_channel.action.ptz_control"
 
 type VideoChannelActionPtzControlPayload struct {
@@ -15,6 +20,17 @@ type VideoChannelActionPtzControlPayload struct {
 	Tilt     int  `json:"tilt"`
 	Zoom     int  `json:"zoom"`
 	Relative bool `json:"relative"`
+}
+
+type VideoClipActionPayload struct {
+	StartTimestamp string  `json:"start_timestamp"`
+	EndTimestamp   string  `json:"end_timestamp"`
+	Resolution     *string `json:"resolution,omitempty"` //"1920x1080"
+}
+
+type SnapshotActionPayload struct {
+	Timestamp  string  `json:"timestamp"`
+	Resolution *string `json:"resolution,omitempty"` //"1920x1080"
 }
 
 type VideoChannelActionPtzControlPayloadDirection string
@@ -32,7 +48,7 @@ type VideoChannelObject interface {
 }
 
 type videoChannelObject struct {
-	setup      func(VideoChannelObject, ObjectController) error
+	setupFn    func(VideoChannelObject, ObjectController) error
 	controller ObjectController
 	metadata   ObjectMetadata
 
@@ -40,6 +56,10 @@ type videoChannelObject struct {
 	subStreamId   string
 	ptz           bool
 	videoEngineId string
+	// actions functions
+	snapshotFn  func(VideoChannelObject, ObjectController, SnapshotActionPayload) error
+	videoclipFn func(VideoChannelObject, ObjectController, VideoClipActionPayload) error
+	ptzFn       func(VideoChannelObject, ObjectController, VideoChannelActionPtzControlPayload) error
 }
 
 // UpdateStateAttributes implements VideoChannelObject.
@@ -92,6 +112,7 @@ func (v *videoChannelObject) GetAvailableActions() []ObjectAction {
 	return []ObjectAction{
 		{Action: VIDEO_CHANNEL_ACTION_SNAPSHOT, Domain: v.metadata.Domain},
 		{Action: VIDEO_CHANNEL_ACTION_PTZ_CONTROL, Domain: v.metadata.Domain},
+		{Action: VIDEO_CHANNEL_ACTION_VIDEOCLIP, Domain: v.metadata.Domain},
 	}
 }
 
@@ -113,7 +134,27 @@ func (v *videoChannelObject) GetMetadata() ObjectMetadata {
 
 // RunAction implements VideoChannelObject.
 func (v *videoChannelObject) RunAction(action string, payload []byte) error {
-	panic("unimplemented")
+	switch action {
+	case VIDEO_CHANNEL_ACTION_SNAPSHOT:
+		var p SnapshotActionPayload
+		if err := json.Unmarshal(payload, &p); err != nil {
+			return err
+		}
+		return v.snapshotFn(v, v.controller, p)
+	case VIDEO_CHANNEL_ACTION_VIDEOCLIP:
+		var p VideoClipActionPayload
+		if err := json.Unmarshal(payload, &p); err != nil {
+			return err
+		}
+		return v.videoclipFn(v, v.controller, p)
+	case VIDEO_CHANNEL_ACTION_PTZ_CONTROL:
+		var p VideoChannelActionPtzControlPayload
+		if err := json.Unmarshal(payload, &p); err != nil {
+			return err
+		}
+		return v.ptzFn(v, v.controller, p)
+	}
+	return nil
 }
 
 // Setup implements VideoChannelObject.
@@ -127,8 +168,8 @@ func (v *videoChannelObject) Setup(oc ObjectController) error {
 		"ptz":             strconv.FormatBool(v.ptz),
 	})
 
-	if v.setup != nil {
-		return v.setup(v, oc)
+	if v.setupFn != nil {
+		return v.setupFn(v, oc)
 	}
 	return nil
 
@@ -142,6 +183,11 @@ type NewVideoChannelObjectProps struct {
 	VideoEngine string
 	PTZ         bool
 	Recording   bool
+
+	SetupFn     func(VideoChannelObject, ObjectController) error
+	SnapshotFn  func(VideoChannelObject, ObjectController, SnapshotActionPayload) error
+	VideoClipFn func(VideoChannelObject, ObjectController, VideoClipActionPayload) error
+	PtzFn       func(VideoChannelObject, ObjectController, VideoChannelActionPtzControlPayload) error
 }
 
 func NewVideoChannelObject(props NewVideoChannelObjectProps) VideoChannelObject {
@@ -152,5 +198,9 @@ func NewVideoChannelObject(props NewVideoChannelObjectProps) VideoChannelObject 
 		subStreamId:   props.SubstreamID,
 		ptz:           props.PTZ,
 		videoEngineId: props.VideoEngine,
+		setupFn:       props.SetupFn,
+		snapshotFn:    props.SnapshotFn,
+		videoclipFn:   props.VideoClipFn,
+		ptzFn:         props.PtzFn,
 	}
 }
