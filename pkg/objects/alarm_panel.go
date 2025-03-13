@@ -104,7 +104,7 @@ func (a *alarmPanelObject) GetMetadata() ObjectMetadata {
 }
 
 // RunAction implements AlarmPanelObject.
-func (a *alarmPanelObject) RunAction(action string, payload []byte) error {
+func (a *alarmPanelObject) RunAction(id, action string, payload []byte) error {
 
 	var p actionPayload
 	if err := json.Unmarshal(payload, &p); err != nil {

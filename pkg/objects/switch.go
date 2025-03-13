@@ -53,7 +53,7 @@ func (s *switchObject) GetMetadata() ObjectMetadata {
 }
 
 // RunAction implements RegistrableObject.
-func (s *switchObject) RunAction(action string, payload []byte) error {
+func (s *switchObject) RunAction(id, action string, payload []byte) error {
 	switch action {
 	case SWITCH_ACTION_TURN_ON:
 		return s.switchActions.TurnOn(s, s.controller)

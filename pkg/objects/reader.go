@@ -100,7 +100,7 @@ func (r *readerObject) GetMetadata() ObjectMetadata {
 }
 
 // RunAction implements ReaderObject.
-func (r *readerObject) RunAction(action string, payload []byte) error {
+func (r *readerObject) RunAction(id, action string, payload []byte) error {
 	switch action {
 
 	case READER_ACTION_RESTART:

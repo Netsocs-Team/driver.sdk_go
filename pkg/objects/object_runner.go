@@ -19,10 +19,11 @@ func (o *objectRunner) GetController() ObjectController {
 }
 
 type requestActionExecutionEventData struct {
-	Payload  map[string]interface{} `json:"payload"`
-	Domain   string                 `json:"domain"`
-	Action   string                 `json:"action"`
-	ObjectID []string               `json:"object_id"`
+	Payload           map[string]interface{} `json:"payload"`
+	Domain            string                 `json:"domain"`
+	Action            string                 `json:"action"`
+	ObjectID          []string               `json:"object_id"`
+	ActionExecutionID string                 `json:"id"`
 }
 
 // SubscribeToActionsRequest implements objects.ObjectRunner.
@@ -60,13 +61,13 @@ func (o *objectRunner) listenActions() {
 			for _, obj := range objects {
 				for _, objID := range req.ObjectID {
 					if obj.GetMetadata().ObjectID == objID {
-						obj.RunAction(req.Action, payloadBytes)
+						obj.RunAction(req.ActionExecutionID, req.Action, payloadBytes)
 					}
 				}
 			}
 		} else {
 			for _, obj := range objects {
-				obj.RunAction(req.Action, payloadBytes)
+				obj.RunAction(req.ActionExecutionID, req.Action, payloadBytes)
 			}
 		}
 

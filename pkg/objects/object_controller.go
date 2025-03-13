@@ -18,11 +18,13 @@ import (
 type ObjectController interface {
 	SetState(objectId string, state string) error
 	UpdateStateAttributes(objectId string, attributes map[string]string) error
+	UpdateResultAttributes(objectId string, attributes map[string]string) error
 	NewAction(action ObjectAction) error
 	CreateObject(RegistrableObject) error
 	ListenActionRequests() error
 	GetDriverhubHost() string
 	GetDriverKey() string
+	GetState(objectId string) (state StateRecord, err error)
 	DisabledObject(objectId string) error
 	EnabledObject(objectId string) error
 	AddEventTypes(eventTypes []EventType) error
@@ -34,6 +36,44 @@ type objectController struct {
 	driverhub_host string
 	driver_key     string
 	httpClient     *resty.Client
+}
+
+// GetState implements ObjectController.
+func (o *objectController) GetState(objectId string) (state StateRecord, err error) {
+	url := fmt.Sprintf("%s/objects/states/%s?limit=1", o.driverhub_host, objectId)
+	var paginated PaginatedStateRecord
+	resp, err := o.httpClient.R().
+		SetHeader("Content-Type", "application/json").
+		Get(url)
+	if err != nil {
+		return state, err
+	}
+
+	if resp.StatusCode() >= 400 {
+		return state, errors.New(resp.String())
+	}
+
+	err = json.Unmarshal(resp.Body(), &paginated)
+	if err != nil {
+		return state, err
+	}
+
+	if len(paginated.Items) > 0 {
+		state = paginated.Items[0]
+	}
+
+	return state, nil
+}
+
+// UpdateResultAttributes implements ObjectController.
+func (o *objectController) UpdateResultAttributes(executionID string, attributes map[string]string) error {
+	url := fmt.Sprintf("%s/objects/actions/executions/%s", o.driverhub_host, executionID)
+	body := map[string]map[string]string{"result": attributes}
+	_, err := o.httpClient.R().
+		SetHeader("Content-Type", "application/json").
+		SetBody(body).
+		Put(url)
+	return err
 }
 
 // Increment implements ObjectController.

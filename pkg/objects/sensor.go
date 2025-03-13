@@ -107,7 +107,7 @@ func (s *sensorObject) GetMetadata() ObjectMetadata {
 }
 
 // RunAction implements RegistrableObject.
-func (s *sensorObject) RunAction(action string, payload []byte) error {
+func (s *sensorObject) RunAction(id, action string, payload []byte) error {
 	return nil
 }
 
