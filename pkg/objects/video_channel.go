@@ -26,10 +26,11 @@ type VideoClipActionPayload struct {
 	StartTimestamp string `json:"start_timestamp"`
 	EndTimestamp   string `json:"end_timestamp"`
 	Resolution     string `json:"resolution,omitempty"` //"1920x1080"
+	Timeout        int    `json:"timeout,omitempty"`    // This is to stop trying to make the video clip after certain minutes
 }
 
 type SnapshotActionPayload struct {
-	Timestamp  string `json:"timestamp"`
+	Timestamp  string `json:"timestamp.omitempty"`  //if its empty make it as soon as received
 	Resolution string `json:"resolution,omitempty"` //"1920x1080"
 }
 
@@ -143,6 +144,7 @@ func (v *videoChannelObject) RunAction(id, action string, payload []byte) error 
 		}
 		r, err := v.snapshotFn(v, v.controller, p)
 		if err != nil {
+			v.controller.UpdateResultAttributes(id, map[string]string{"error": err.Error()})
 			return err
 		}
 		return v.controller.UpdateResultAttributes(id, map[string]string{"filename": r})
@@ -154,6 +156,7 @@ func (v *videoChannelObject) RunAction(id, action string, payload []byte) error 
 		}
 		r, err := v.videoclipFn(v, v.controller, p)
 		if err != nil {
+			v.controller.UpdateResultAttributes(id, map[string]string{"error": err.Error()})
 			return err
 		}
 		return v.controller.UpdateResultAttributes(id, map[string]string{"filename": r})
