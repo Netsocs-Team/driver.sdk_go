@@ -58,7 +58,7 @@ type videoChannelObject struct {
 	videoEngineId string
 	// actions functions
 	snapshotFn  func(VideoChannelObject, ObjectController, SnapshotActionPayload) (filename string, err error)
-	videoclipFn func(VideoChannelObject, ObjectController, VideoClipActionPayload) error
+	videoclipFn func(VideoChannelObject, ObjectController, VideoClipActionPayload) (filename string, err error)
 	ptzFn       func(VideoChannelObject, ObjectController, VideoChannelActionPtzControlPayload) error
 }
 
@@ -152,7 +152,12 @@ func (v *videoChannelObject) RunAction(id, action string, payload []byte) error 
 		if err := json.Unmarshal(payload, &p); err != nil {
 			return err
 		}
-		return v.videoclipFn(v, v.controller, p)
+		r, err := v.videoclipFn(v, v.controller, p)
+		if err != nil {
+			return err
+		}
+		return v.controller.UpdateResultAttributes(id, map[string]string{"filename": r})
+
 	case VIDEO_CHANNEL_ACTION_PTZ_CONTROL:
 		var p VideoChannelActionPtzControlPayload
 		if err := json.Unmarshal(payload, &p); err != nil {
@@ -192,7 +197,7 @@ type NewVideoChannelObjectProps struct {
 
 	SetupFn     func(VideoChannelObject, ObjectController) error
 	SnapshotFn  func(VideoChannelObject, ObjectController, SnapshotActionPayload) (string, error)
-	VideoclipFn func(VideoChannelObject, ObjectController, VideoClipActionPayload) error
+	VideoclipFn func(VideoChannelObject, ObjectController, VideoClipActionPayload) (string, error)
 	PtzFn       func(VideoChannelObject, ObjectController, VideoChannelActionPtzControlPayload) error
 }
 

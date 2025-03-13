@@ -18,7 +18,7 @@ import (
 type ObjectController interface {
 	SetState(objectId string, state string) error
 	UpdateStateAttributes(objectId string, attributes map[string]string) error
-	UpdateResultAttributes(objectId string, attributes map[string]string) error
+	UpdateResultAttributes(ActionExecutionID string, attributes map[string]string) error
 	NewAction(action ObjectAction) error
 	CreateObject(RegistrableObject) error
 	ListenActionRequests() error

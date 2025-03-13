@@ -61,13 +61,13 @@ func (o *objectRunner) listenActions() {
 			for _, obj := range objects {
 				for _, objID := range req.ObjectID {
 					if obj.GetMetadata().ObjectID == objID {
-						obj.RunAction(req.ActionExecutionID, req.Action, payloadBytes)
+						go obj.RunAction(req.ActionExecutionID, req.Action, payloadBytes)
 					}
 				}
 			}
 		} else {
 			for _, obj := range objects {
-				obj.RunAction(req.ActionExecutionID, req.Action, payloadBytes)
+				go obj.RunAction(req.ActionExecutionID, req.Action, payloadBytes)
 			}
 		}
 
