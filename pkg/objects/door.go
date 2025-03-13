@@ -60,7 +60,7 @@ func (d *doorObject) GetMetadata() ObjectMetadata {
 }
 
 // RunAction implements DoorObject.
-func (d *doorObject) RunAction(action string, payload []byte) error {
+func (d *doorObject) RunAction(id, action string, payload []byte) error {
 	switch action {
 	case DOOR_ACTION_OPEN:
 		if err := d.openDoorMethod(d, d.controller); err != nil {

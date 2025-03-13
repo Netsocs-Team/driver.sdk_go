@@ -57,7 +57,7 @@ type videoChannelObject struct {
 	ptz           bool
 	videoEngineId string
 	// actions functions
-	snapshotFn  func(VideoChannelObject, ObjectController, SnapshotActionPayload) error
+	snapshotFn  func(VideoChannelObject, ObjectController, SnapshotActionPayload) (filename string, err error)
 	videoclipFn func(VideoChannelObject, ObjectController, VideoClipActionPayload) error
 	ptzFn       func(VideoChannelObject, ObjectController, VideoChannelActionPtzControlPayload) error
 }
@@ -133,14 +133,20 @@ func (v *videoChannelObject) GetMetadata() ObjectMetadata {
 }
 
 // RunAction implements VideoChannelObject.
-func (v *videoChannelObject) RunAction(action string, payload []byte) error {
+func (v *videoChannelObject) RunAction(id, action string, payload []byte) error {
+
 	switch action {
 	case VIDEO_CHANNEL_ACTION_SNAPSHOT:
 		var p SnapshotActionPayload
 		if err := json.Unmarshal(payload, &p); err != nil {
 			return err
 		}
-		return v.snapshotFn(v, v.controller, p)
+		r, err := v.snapshotFn(v, v.controller, p)
+		if err != nil {
+			return err
+		}
+		return v.controller.UpdateResultAttributes(id, map[string]string{"filename": r})
+
 	case VIDEO_CHANNEL_ACTION_VIDEOCLIP:
 		var p VideoClipActionPayload
 		if err := json.Unmarshal(payload, &p); err != nil {
@@ -185,15 +191,14 @@ type NewVideoChannelObjectProps struct {
 	Recording   bool
 
 	SetupFn     func(VideoChannelObject, ObjectController) error
-	SnapshotFn  func(VideoChannelObject, ObjectController, SnapshotActionPayload) error
+	SnapshotFn  func(VideoChannelObject, ObjectController, SnapshotActionPayload) (string, error)
 	VideoclipFn func(VideoChannelObject, ObjectController, VideoClipActionPayload) error
 	PtzFn       func(VideoChannelObject, ObjectController, VideoChannelActionPtzControlPayload) error
 }
 
 func NewVideoChannelObject(props NewVideoChannelObjectProps) VideoChannelObject {
 	return &videoChannelObject{
-		metadata: props.Metadata,
-
+		metadata:      props.Metadata,
 		streamId:      props.StreamID,
 		subStreamId:   props.SubstreamID,
 		ptz:           props.PTZ,
