@@ -1,6 +1,7 @@
 package objects
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/goccy/go-json"
@@ -134,41 +135,41 @@ func (v *videoChannelObject) GetMetadata() ObjectMetadata {
 }
 
 // RunAction implements VideoChannelObject.
-func (v *videoChannelObject) RunAction(id, action string, payload []byte) error {
+func (v *videoChannelObject) RunAction(id, action string, payload []byte) (map[string]string, error) {
 
 	switch action {
 	case VIDEO_CHANNEL_ACTION_SNAPSHOT:
 		var p SnapshotActionPayload
 		if err := json.Unmarshal(payload, &p); err != nil {
-			return err
+			return nil, err
 		}
 		r, err := v.snapshotFn(v, v.controller, p)
 		if err != nil {
-			v.controller.UpdateResultAttributes(id, map[string]string{"error": err.Error()})
-			return err
+
+			return nil, err
 		}
-		return v.controller.UpdateResultAttributes(id, map[string]string{"filename": r})
+		return map[string]string{"filename": r}, nil
 
 	case VIDEO_CHANNEL_ACTION_VIDEOCLIP:
 		var p VideoClipActionPayload
 		if err := json.Unmarshal(payload, &p); err != nil {
-			return err
+			return nil, err
 		}
 		r, err := v.videoclipFn(v, v.controller, p)
 		if err != nil {
-			v.controller.UpdateResultAttributes(id, map[string]string{"error": err.Error()})
-			return err
+			return nil, err
 		}
-		return v.controller.UpdateResultAttributes(id, map[string]string{"filename": r})
+		return map[string]string{"filename": r}, nil
 
 	case VIDEO_CHANNEL_ACTION_PTZ_CONTROL:
 		var p VideoChannelActionPtzControlPayload
 		if err := json.Unmarshal(payload, &p); err != nil {
-			return err
+			return nil, err
 		}
-		return v.ptzFn(v, v.controller, p)
+		return nil, v.ptzFn(v, v.controller, p)
 	}
-	return nil
+	return nil, fmt.Errorf("action %s not found", action)
+
 }
 
 // Setup implements VideoChannelObject.

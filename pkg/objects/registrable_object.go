@@ -16,7 +16,7 @@ type RegistrableObject interface {
 	Setup(ObjectController) error
 	GetAvailableStates() []string
 	GetAvailableActions() []ObjectAction
-	RunAction(id, action string, payload []byte) error
+	RunAction(id, action string, payload []byte) (map[string]string, error)
 	GetMetadata() ObjectMetadata
 	SetState(state string) error
 	UpdateStateAttributes(attributes map[string]string) error

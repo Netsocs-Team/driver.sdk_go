@@ -100,35 +100,35 @@ func (r *readerObject) GetMetadata() ObjectMetadata {
 }
 
 // RunAction implements ReaderObject.
-func (r *readerObject) RunAction(id, action string, payload []byte) error {
+func (r *readerObject) RunAction(id, action string, payload []byte) (map[string]string, error) {
 	switch action {
 
 	case READER_ACTION_RESTART:
-		return r.restart(r, r.controller)
+		return nil, r.restart(r, r.controller)
 
 	case READER_ACTION_STORE_QRS:
 		storeQrsPayload := QRPayload{}
 		if err := json.Unmarshal(payload, &storeQrsPayload); err != nil {
-			return err
+			return nil, err
 		}
-		return r.storeQRCredentials(r, r.controller, storeQrsPayload)
+		return nil, r.storeQRCredentials(r, r.controller, storeQrsPayload)
 
 	case READER_ACTION_DELETE_QRS:
 		deleteQrsPayload := QRPayload{}
 		if err := json.Unmarshal(payload, &deleteQrsPayload); err != nil {
-			return err
+			return nil, err
 		}
-		return r.deleteQRCredentials(r, r.controller, deleteQrsPayload)
+		return nil, r.deleteQRCredentials(r, r.controller, deleteQrsPayload)
 
 	case READER_ACTION_DELETE_PERSON:
 		deletePersonPayload := DeletePersonPayload{}
 		if err := json.Unmarshal(payload, &deletePersonPayload); err != nil {
-			return err
+			return nil, err
 		}
-		return r.deletePersonCredentials(r, r.controller, deletePersonPayload)
+		return nil, r.deletePersonCredentials(r, r.controller, deletePersonPayload)
 	}
 
-	return fmt.Errorf("action %s not found", action)
+	return nil, fmt.Errorf("action %s not found", action)
 }
 
 // SetState implements ReaderObject.
