@@ -148,7 +148,7 @@ func (v *videoChannelObject) RunAction(id, action string, payload []byte) (map[s
 
 			return nil, err
 		}
-		return map[string]string{"filename": r}, nil
+		return map[string]string{"snapshot_link": r}, nil
 
 	case VIDEO_CHANNEL_ACTION_VIDEOCLIP:
 		var p VideoClipActionPayload
@@ -159,7 +159,7 @@ func (v *videoChannelObject) RunAction(id, action string, payload []byte) (map[s
 		if err != nil {
 			return nil, err
 		}
-		return map[string]string{"filename": r}, nil
+		return map[string]string{"videoclip_link": r}, nil
 
 	case VIDEO_CHANNEL_ACTION_PTZ_CONTROL:
 		var p VideoChannelActionPtzControlPayload
