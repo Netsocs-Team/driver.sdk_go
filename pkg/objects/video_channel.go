@@ -26,13 +26,13 @@ type VideoChannelActionPtzControlPayload struct {
 type VideoClipActionPayload struct {
 	StartTimestamp string `json:"start_timestamp"`
 	EndTimestamp   string `json:"end_timestamp"`
-	Resolution     string `json:"resolution,omitempty"` //"1920x1080"
-	Timeout        int    `json:"timeout,omitempty"`    // This is to stop trying to make the video clip after certain seconds
+	Resolution     string `json:"resolution"` //"1920x1080"
+	Timeout        int    `json:"timeout"`    // This is to stop trying to make the video clip after certain seconds
 }
 
 type SnapshotActionPayload struct {
-	Timestamp  string `json:"snapshot_timestamp,omitempty"` //if its empty make it as soon as received
-	Resolution string `json:"resolution,omitempty"`         //"1920x1080"
+	Timestamp  string `json:"snapshot_timestamp"` //if its empty make it as soon as received
+	Resolution string `json:"resolution"`         //"1920x1080"
 }
 
 type VideoChannelActionPtzControlPayloadDirection string
