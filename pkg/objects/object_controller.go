@@ -18,7 +18,7 @@ import (
 type ObjectController interface {
 	SetState(objectId string, state string) error
 	UpdateStateAttributes(objectId string, attributes map[string]string) error
-	UpdateResultAttributes(objectId string, attributes map[string]string) error
+	UpdateResultAttributes(ActionExecutionID string, attributes map[string]string) error
 	NewAction(action ObjectAction) error
 	CreateObject(RegistrableObject) error
 	ListenActionRequests() error
@@ -288,9 +288,7 @@ func (o *objectController) CreateObject(obj RegistrableObject) error {
 	req.StatesAvailable = []string{}
 	req.ActionsAvailable = []string{}
 
-	for _, state := range obj.GetAvailableStates() {
-		req.StatesAvailable = append(req.StatesAvailable, state)
-	}
+	req.StatesAvailable = append(req.StatesAvailable, obj.GetAvailableStates()...)
 
 	for _, action := range obj.GetAvailableActions() {
 		req.ActionsAvailable = append(req.ActionsAvailable, action.Action)

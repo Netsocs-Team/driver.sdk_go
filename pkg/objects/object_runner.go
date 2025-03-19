@@ -50,27 +50,38 @@ func (o *objectRunner) listenActions() {
 		}
 
 		objects := o.objectsMap[req.Domain]
-		if objects == nil || len(objects) == 0 {
+		if len(objects) == 0 {
 			sugar.Info("no objects found for domain", zap.String("domain", req.Domain))
 			return
 		}
 
 		sugar.Info("running action", zap.String("action", req.Action), zap.String("domain", req.Domain), zap.Strings("object_id", req.ObjectID), zap.String("payload", string(payloadBytes)))
 
+		RunActionRoutine := func(obj RegistrableObject) {
+			resp, err := obj.RunAction(req.ActionExecutionID, req.Action, payloadBytes)
+
+			if err != nil {
+				sugar.Info("action execution error", zap.Error(err))
+				o.GetController().UpdateResultAttributes(req.ActionExecutionID, map[string]string{"error": err.Error()})
+			} else {
+				sugar.Info("action executed", zap.Any("response", resp))
+				o.GetController().UpdateResultAttributes(req.ActionExecutionID, resp)
+			}
+		}
+
 		if len(req.ObjectID) > 0 {
 			for _, obj := range objects {
 				for _, objID := range req.ObjectID {
 					if obj.GetMetadata().ObjectID == objID {
-						obj.RunAction(req.ActionExecutionID, req.Action, payloadBytes)
+						go RunActionRoutine(obj)
 					}
 				}
 			}
 		} else {
 			for _, obj := range objects {
-				obj.RunAction(req.ActionExecutionID, req.Action, payloadBytes)
+				go RunActionRoutine(obj)
 			}
 		}
-
 	})
 
 }

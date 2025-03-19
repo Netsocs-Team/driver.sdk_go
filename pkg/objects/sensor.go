@@ -1,14 +1,17 @@
 package objects
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 type sensorObject struct {
-	sensorType        SensorObjectType
-	setup             SetupFunction
-	metatada          ObjectMetadata
-	unitOfMeasurement string
-	controller        ObjectController
-	eventTypes        []EventType
+	//sensorType        SensorObjectType
+	setup    SetupFunction
+	metatada ObjectMetadata
+	//unitOfMeasurement string
+	controller ObjectController
+	eventTypes []EventType
 }
 
 // Decrement implements SensorObject.
@@ -107,8 +110,9 @@ func (s *sensorObject) GetMetadata() ObjectMetadata {
 }
 
 // RunAction implements RegistrableObject.
-func (s *sensorObject) RunAction(id, action string, payload []byte) error {
-	return nil
+func (s *sensorObject) RunAction(id, action string, payload []byte) (map[string]string, error) {
+	return nil, fmt.Errorf("action %s not found", action)
+
 }
 
 // Setup implements RegistrableObject.

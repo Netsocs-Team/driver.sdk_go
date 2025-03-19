@@ -1,5 +1,7 @@
 package objects
 
+import "fmt"
+
 const SWITCH_STATE_OFF = "switch.state.off"
 const SWITCH_STATE_ON = "switch.state.on"
 
@@ -53,14 +55,15 @@ func (s *switchObject) GetMetadata() ObjectMetadata {
 }
 
 // RunAction implements RegistrableObject.
-func (s *switchObject) RunAction(id, action string, payload []byte) error {
+func (s *switchObject) RunAction(id, action string, payload []byte) (map[string]string, error) {
 	switch action {
 	case SWITCH_ACTION_TURN_ON:
-		return s.switchActions.TurnOn(s, s.controller)
+		return nil, s.switchActions.TurnOn(s, s.controller)
 	case SWITCH_ACTION_TURN_OFF:
-		return s.switchActions.TurnOff(s, s.controller)
+		return nil, s.switchActions.TurnOff(s, s.controller)
 	}
-	return nil
+	return nil, fmt.Errorf("action %s not found", action)
+
 }
 
 // GetAvailableActions implements RegistrableObject.

@@ -1,6 +1,7 @@
 package objects
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/goccy/go-json"
@@ -25,12 +26,13 @@ type VideoChannelActionPtzControlPayload struct {
 type VideoClipActionPayload struct {
 	StartTimestamp string `json:"start_timestamp"`
 	EndTimestamp   string `json:"end_timestamp"`
-	Resolution     string `json:"resolution,omitempty"` //"1920x1080"
+	Resolution     string `json:"resolution"` //"1920x1080"
+	Timeout        int    `json:"timeout"`    // This is to stop trying to make the video clip after certain seconds
 }
 
 type SnapshotActionPayload struct {
-	Timestamp  string `json:"timestamp"`
-	Resolution string `json:"resolution,omitempty"` //"1920x1080"
+	Timestamp  string `json:"snapshot_timestamp"` //if its empty make it as soon as received
+	Resolution string `json:"resolution"`         //"1920x1080"
 }
 
 type VideoChannelActionPtzControlPayloadDirection string
@@ -58,7 +60,7 @@ type videoChannelObject struct {
 	videoEngineId string
 	// actions functions
 	snapshotFn  func(VideoChannelObject, ObjectController, SnapshotActionPayload) (filename string, err error)
-	videoclipFn func(VideoChannelObject, ObjectController, VideoClipActionPayload) error
+	videoclipFn func(VideoChannelObject, ObjectController, VideoClipActionPayload) (filename string, err error)
 	ptzFn       func(VideoChannelObject, ObjectController, VideoChannelActionPtzControlPayload) error
 }
 
@@ -133,34 +135,41 @@ func (v *videoChannelObject) GetMetadata() ObjectMetadata {
 }
 
 // RunAction implements VideoChannelObject.
-func (v *videoChannelObject) RunAction(id, action string, payload []byte) error {
+func (v *videoChannelObject) RunAction(id, action string, payload []byte) (map[string]string, error) {
 
 	switch action {
 	case VIDEO_CHANNEL_ACTION_SNAPSHOT:
 		var p SnapshotActionPayload
 		if err := json.Unmarshal(payload, &p); err != nil {
-			return err
+			return nil, err
 		}
 		r, err := v.snapshotFn(v, v.controller, p)
 		if err != nil {
-			return err
+
+			return nil, err
 		}
-		return v.controller.UpdateResultAttributes(id, map[string]string{"filename": r})
+		return map[string]string{"snapshot_link": r}, nil
 
 	case VIDEO_CHANNEL_ACTION_VIDEOCLIP:
 		var p VideoClipActionPayload
 		if err := json.Unmarshal(payload, &p); err != nil {
-			return err
+			return nil, err
 		}
-		return v.videoclipFn(v, v.controller, p)
+		r, err := v.videoclipFn(v, v.controller, p)
+		if err != nil {
+			return nil, err
+		}
+		return map[string]string{"videoclip_link": r}, nil
+
 	case VIDEO_CHANNEL_ACTION_PTZ_CONTROL:
 		var p VideoChannelActionPtzControlPayload
 		if err := json.Unmarshal(payload, &p); err != nil {
-			return err
+			return nil, err
 		}
-		return v.ptzFn(v, v.controller, p)
+		return nil, v.ptzFn(v, v.controller, p)
 	}
-	return nil
+	return nil, fmt.Errorf("action %s not found", action)
+
 }
 
 // Setup implements VideoChannelObject.
@@ -192,7 +201,7 @@ type NewVideoChannelObjectProps struct {
 
 	SetupFn     func(VideoChannelObject, ObjectController) error
 	SnapshotFn  func(VideoChannelObject, ObjectController, SnapshotActionPayload) (string, error)
-	VideoclipFn func(VideoChannelObject, ObjectController, VideoClipActionPayload) error
+	VideoclipFn func(VideoChannelObject, ObjectController, VideoClipActionPayload) (string, error)
 	PtzFn       func(VideoChannelObject, ObjectController, VideoChannelActionPtzControlPayload) error
 }
 
