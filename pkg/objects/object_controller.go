@@ -188,6 +188,22 @@ func (o *objectController) UpdateStateAttributes(objectId string, attributes map
 	return err
 }
 
+type UpdateStateAttributesBatchRequest struct {
+	Changes []ObjectStateChange `json:"changes"`
+}
+
+func (o *objectController) UpdateStateAttributesBatch(objectsStates []ObjectStateChange) error {
+	url := fmt.Sprintf("%s/objects/states_batch", o.driverhub_host)
+	body := UpdateStateAttributesBatchRequest{
+		Changes: objectsStates,
+	}
+	_, err := o.httpClient.R().
+		SetHeader("Content-Type", "application/json").
+		SetBody(body).
+		Put(url)
+	return err
+}
+
 // NewAction implements ObjectController.
 func (o *objectController) NewAction(action ObjectAction) error {
 	url := fmt.Sprintf("%s/objects/actions", o.driverhub_host)
