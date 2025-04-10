@@ -14,7 +14,7 @@ type State struct {
 }
 
 type ObjectStateChange struct {
-	ObjectID                  string            `json:"id"`
+	ObjectID                  string            `json:"object_id"`
 	State                     string            `json:"state"`
 	StateAdditionalProperties map[string]string `json:"state_additional_properties" bson:"state_additional_properties"`
 }
