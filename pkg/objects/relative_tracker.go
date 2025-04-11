@@ -56,8 +56,8 @@ func (r *relativeTrackerObject) GetMetadata() ObjectMetadata {
 }
 
 // RunAction implements RelativeTrackerObject.
-func (r *relativeTrackerObject) RunAction(action string, payload []byte) error {
-	return nil
+func (r *relativeTrackerObject) RunAction(id, action string, payload []byte) (map[string]string, error) {
+	return nil, nil
 }
 
 // SetAcceleration implements RelativeTrackerObject.

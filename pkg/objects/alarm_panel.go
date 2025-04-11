@@ -1,6 +1,7 @@
 package objects
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/goccy/go-json"
@@ -104,34 +105,34 @@ func (a *alarmPanelObject) GetMetadata() ObjectMetadata {
 }
 
 // RunAction implements AlarmPanelObject.
-func (a *alarmPanelObject) RunAction(action string, payload []byte) error {
+func (a *alarmPanelObject) RunAction(id, action string, payload []byte) (map[string]string, error) {
 
 	var p actionPayload
 	if err := json.Unmarshal(payload, &p); err != nil {
-		return err
+		return nil, err
 	}
 
 	switch action {
 	case ALARM_PANEL_ACTION_ARM:
 		if err := a.armFn(a, a.controller, p.ArmMode, p.Code); err != nil {
-			return err
+			return nil, err
 		}
-		return a.controller.SetState(a.GetMetadata().ObjectID, ALARM_PANEL_STATE_AWAY_ARMED)
+		return nil, a.controller.SetState(a.GetMetadata().ObjectID, ALARM_PANEL_STATE_AWAY_ARMED)
 	case ALARM_PANEL_ACTION_DISARM:
 		if err := a.disarmFn(a, a.controller, p.Code); err != nil {
-			return err
+			return nil, err
 		}
-		return a.controller.SetState(a.GetMetadata().ObjectID, ALARM_PANEL_STATE_DISARMED)
+		return nil, a.controller.SetState(a.GetMetadata().ObjectID, ALARM_PANEL_STATE_DISARMED)
 	case ALARM_PANEL_ACTION_FIRE:
-		return a.fireFn(a, a.controller, p.Code)
+		return nil, a.fireFn(a, a.controller, p.Code)
 	case ALARM_PANEL_ACTION_PANIC:
-		return a.panicFn(a, a.controller, p.Code)
+		return nil, a.panicFn(a, a.controller, p.Code)
 	case ALARM_PANEL_ACTION_AUXILIARY:
-		return a.auxiliaryFn(a, a.controller, p.Code)
+		return nil, a.auxiliaryFn(a, a.controller, p.Code)
 	case ALARM_PANEL_BYPASS:
-		return a.bypassFn(a, a.controller, p.Code, p.Zone)
+		return nil, a.bypassFn(a, a.controller, p.Code, p.Zone)
 	}
-	return nil
+	return nil, fmt.Errorf("action %s not found", action)
 }
 
 // Setup implements AlarmPanelObject.

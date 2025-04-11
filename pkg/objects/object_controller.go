@@ -18,11 +18,13 @@ import (
 type ObjectController interface {
 	SetState(objectId string, state string) error
 	UpdateStateAttributes(objectId string, attributes map[string]string) error
+	UpdateResultAttributes(ActionExecutionID string, attributes map[string]string) error
 	NewAction(action ObjectAction) error
 	CreateObject(RegistrableObject) error
 	ListenActionRequests() error
 	GetDriverhubHost() string
 	GetDriverKey() string
+	GetState(objectId string) (state StateRecord, err error)
 	DisabledObject(objectId string) error
 	EnabledObject(objectId string) error
 	AddEventTypes(eventTypes []EventType) error
@@ -34,6 +36,44 @@ type objectController struct {
 	driverhub_host string
 	driver_key     string
 	httpClient     *resty.Client
+}
+
+// GetState implements ObjectController.
+func (o *objectController) GetState(objectId string) (state StateRecord, err error) {
+	url := fmt.Sprintf("%s/objects/states/%s?limit=1", o.driverhub_host, objectId)
+	var paginated PaginatedStateRecord
+	resp, err := o.httpClient.R().
+		SetHeader("Content-Type", "application/json").
+		Get(url)
+	if err != nil {
+		return state, err
+	}
+
+	if resp.StatusCode() >= 400 {
+		return state, errors.New(resp.String())
+	}
+
+	err = json.Unmarshal(resp.Body(), &paginated)
+	if err != nil {
+		return state, err
+	}
+
+	if len(paginated.Items) > 0 {
+		state = paginated.Items[0]
+	}
+
+	return state, nil
+}
+
+// UpdateResultAttributes implements ObjectController.
+func (o *objectController) UpdateResultAttributes(executionID string, attributes map[string]string) error {
+	url := fmt.Sprintf("%s/objects/actions/executions/%s", o.driverhub_host, executionID)
+	body := map[string]map[string]string{"result": attributes}
+	_, err := o.httpClient.R().
+		SetHeader("Content-Type", "application/json").
+		SetBody(body).
+		Put(url)
+	return err
 }
 
 // Increment implements ObjectController.
@@ -148,6 +188,22 @@ func (o *objectController) UpdateStateAttributes(objectId string, attributes map
 	return err
 }
 
+type UpdateStateAttributesBatchRequest struct {
+	Changes []ObjectStateChange `json:"changes"`
+}
+
+func (o *objectController) UpdateStateAttributesBatch(objectsStates []ObjectStateChange) error {
+	url := fmt.Sprintf("%s/objects/states_batch", o.driverhub_host)
+	body := UpdateStateAttributesBatchRequest{
+		Changes: objectsStates,
+	}
+	_, err := o.httpClient.R().
+		SetHeader("Content-Type", "application/json").
+		SetBody(body).
+		Put(url)
+	return err
+}
+
 // NewAction implements ObjectController.
 func (o *objectController) NewAction(action ObjectAction) error {
 	url := fmt.Sprintf("%s/objects/actions", o.driverhub_host)
@@ -248,9 +304,7 @@ func (o *objectController) CreateObject(obj RegistrableObject) error {
 	req.StatesAvailable = []string{}
 	req.ActionsAvailable = []string{}
 
-	for _, state := range obj.GetAvailableStates() {
-		req.StatesAvailable = append(req.StatesAvailable, state)
-	}
+	req.StatesAvailable = append(req.StatesAvailable, obj.GetAvailableStates()...)
 
 	for _, action := range obj.GetAvailableActions() {
 		req.ActionsAvailable = append(req.ActionsAvailable, action.Action)

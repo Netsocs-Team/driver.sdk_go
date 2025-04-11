@@ -1,5 +1,7 @@
 package objects
 
+import "fmt"
+
 type DoorObject interface {
 	RegistrableObject
 }
@@ -60,20 +62,20 @@ func (d *doorObject) GetMetadata() ObjectMetadata {
 }
 
 // RunAction implements DoorObject.
-func (d *doorObject) RunAction(action string, payload []byte) error {
+func (d *doorObject) RunAction(id, action string, payload []byte) (map[string]string, error) {
 	switch action {
 	case DOOR_ACTION_OPEN:
 		if err := d.openDoorMethod(d, d.controller); err != nil {
-			return err
+			return nil, err
 		}
-		return d.controller.SetState(d.metadata.ObjectID, DOOR_STATE_OPEN)
+		return nil, d.controller.SetState(d.metadata.ObjectID, DOOR_STATE_OPEN)
 	case DOOR_ACTION_CLOSE:
 		if err := d.closeDoorMethod(d, d.controller); err != nil {
-			return err
+			return nil, err
 		}
-		return d.controller.SetState(d.metadata.ObjectID, DOOR_STATE_CLOSE)
+		return nil, d.controller.SetState(d.metadata.ObjectID, DOOR_STATE_CLOSE)
 	}
-	return nil
+	return nil, fmt.Errorf("action %s not found", action)
 }
 
 // Setup implements DoorObject.
