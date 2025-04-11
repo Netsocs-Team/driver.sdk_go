@@ -13,6 +13,12 @@ type State struct {
 	StateAdditionalProperties map[string]string `json:"state_additional_properties" bson:"state_additional_properties"`
 }
 
+type ObjectStateChange struct {
+	ObjectID                  string            `json:"object_id"`
+	State                     string            `json:"state"`
+	StateAdditionalProperties map[string]string `json:"state_additional_properties" bson:"state_additional_properties"`
+}
+
 type PaginatedStateRecord struct {
 	Items    []StateRecord `json:"items"`
 	Metadata struct {
