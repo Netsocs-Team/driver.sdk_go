@@ -3,6 +3,7 @@ package objects
 import (
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/goccy/go-json"
 )
@@ -15,6 +16,7 @@ const VIDEO_CHANNEL_STATE_UNKNOWN = "video_channel.state.unknown"
 const VIDEO_CHANNEL_ACTION_SNAPSHOT = "video_channel.action.snapshot"
 const VIDEO_CHANNEL_ACTION_VIDEOCLIP = "video_channel.action.videoclip"
 const VIDEO_CHANNEL_ACTION_PTZ_CONTROL = "video_channel.action.ptz_control"
+const VIDEO_CHANNEL_ACTION_SEEK = "video_channel.action.seek" //seek to a specific timestamp to playback id
 
 type VideoChannelActionPtzControlPayload struct {
 	Pan      int  `json:"pan"`
@@ -49,6 +51,13 @@ type VideoChannelObject interface {
 	SetModeUnknown() error
 }
 
+type SeekPayload struct {
+	PlaybackID string
+	SeekTo     time.Time
+	Speed      float64
+	Reverse    bool
+}
+
 type videoChannelObject struct {
 	setupFn    func(VideoChannelObject, ObjectController) error
 	controller ObjectController
@@ -62,6 +71,7 @@ type videoChannelObject struct {
 	snapshotFn  func(VideoChannelObject, ObjectController, SnapshotActionPayload) (filename string, err error)
 	videoclipFn func(VideoChannelObject, ObjectController, VideoClipActionPayload) (filename string, err error)
 	ptzFn       func(VideoChannelObject, ObjectController, VideoChannelActionPtzControlPayload) error
+	seekFn      func(VideoChannelObject, ObjectController, SeekPayload) error
 }
 
 // UpdateStateAttributes implements VideoChannelObject.
@@ -71,7 +81,7 @@ func (v *videoChannelObject) UpdateStateAttributes(attributes map[string]string)
 
 // SetState implements VideoChannelObject.
 func (v *videoChannelObject) SetState(state string) error {
-	panic("unimplemented")
+	return v.controller.SetState(v.GetMetadata().ObjectID, state)
 }
 
 // AddEventTypes implements VideoChannelObject.
@@ -115,6 +125,7 @@ func (v *videoChannelObject) GetAvailableActions() []ObjectAction {
 		{Action: VIDEO_CHANNEL_ACTION_SNAPSHOT, Domain: v.metadata.Domain},
 		{Action: VIDEO_CHANNEL_ACTION_PTZ_CONTROL, Domain: v.metadata.Domain},
 		{Action: VIDEO_CHANNEL_ACTION_VIDEOCLIP, Domain: v.metadata.Domain},
+		{Action: VIDEO_CHANNEL_ACTION_SEEK, Domain: v.metadata.Domain},
 	}
 }
 
@@ -167,7 +178,15 @@ func (v *videoChannelObject) RunAction(id, action string, payload []byte) (map[s
 			return nil, err
 		}
 		return nil, v.ptzFn(v, v.controller, p)
+
+	case VIDEO_CHANNEL_ACTION_SEEK:
+		var p SeekPayload
+		if err := json.Unmarshal(payload, &p); err != nil {
+			return nil, err
+		}
+		return nil, v.seekFn(v, v.controller, p)
 	}
+
 	return nil, fmt.Errorf("action %s not found", action)
 
 }
