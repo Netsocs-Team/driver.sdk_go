@@ -10,7 +10,7 @@ const NOTIFY_STATE_UNKNOWN = "notify.state.unknown"
 const NOTIFY_STATE_IDLE = "notify.state.idle"
 const NOTIFY_STATE_BUSY = "notify.state.busy"
 const NOTIFY_STATE_ERROR = "notify.state.error"
-const NOTIFY_ACTION_CREATE = "notify.action.create"
+const CREATE = "create"
 
 type NotifyObject interface {
 	RegistrableObject
@@ -39,7 +39,7 @@ type notifierObject struct {
 func (n *notifierObject) GetAvailableActions() []ObjectAction {
 	return []ObjectAction{
 		{
-			Action: NOTIFY_ACTION_CREATE,
+			Action: CREATE,
 			Domain: n.GetMetadata().Domain,
 		},
 	}
@@ -69,7 +69,7 @@ func (n *notifierObject) RunAction(id string, action string, payload []byte) (ma
 	}
 
 	switch action {
-	case NOTIFY_ACTION_CREATE:
+	case CREATE:
 		if err := n.createFn(n, n.controller, p); err != nil {
 			return nil, err
 		}
