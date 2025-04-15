@@ -1,0 +1,24 @@
+{
+    "driver_key": "key123",
+    "driver_hub_host": "192.168.6.43:3196",
+    "event_server_host": "24.126.101.169",
+    "version": "1.0.0",
+    "name": "invixium BIOMETRIC",
+    "driver_binary_filename": "driver.invixium_biometric",
+    "cluster_mode": false,
+    "settings_available": [
+        "setAddPersonToAC",
+        "setDelPersonToAC",
+        "setCardToPersonAC",
+        "setFaceToPersonAC",
+        "actionListenEvent",
+        "actionPingDevice",
+        "setQRToPersonAC",
+        "stopListenEvent"
+    ],
+    "log_level": "debug -> for dev; info -> for prod",
+    "device_models_supported_all": true,
+    "device_firmwares_supported_all": true,
+    "comments": "",
+    "documentation_url": "https://github.com/Netsocs-Team/driver.invixium_biometric"
+}

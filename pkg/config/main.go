@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"strings"
 
 	"github.com/gorilla/websocket"
 )
@@ -37,14 +38,15 @@ func (c *ConfigMessage) GetRawMessage() []byte {
 }
 
 type ConfigMessageDeviceData struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-	IP       string `json:"ip_address_public"`
-	Port     int    `json:"port"`
-	IsSSL    bool   `json:"is_ssl"`
-	SSLPort  int    `json:"ssl_port"`
-	ID       int    `json:"id_device"`
-	ChildID  string `json:"child_id"`
+	Username    string                 `json:"username"`
+	Password    string                 `json:"password"`
+	IP          string                 `json:"ip_address_public"`
+	Port        int                    `json:"port"`
+	IsSSL       bool                   `json:"is_ssl"`
+	SSLPort     int                    `json:"ssl_port"`
+	ID          int                    `json:"id_device"`
+	ChildID     string                 `json:"child_id"`
+	Extrafields map[string]interface{} `json:"extrafields"`
 }
 
 var messages = make(chan *ConfigMessage)
@@ -60,8 +62,13 @@ type defaultDataResponse struct {
 	Msg   string `json:"msg"`
 }
 
+// This function will start a websocket listener for all 'configuration' requests
+// coming from the DriverHub.
+// In the SDK, there is a map of handlers that can be registered for each configuration.
+// This function, upon receiving a configuration, will look in the map of handlers
+// to see if there is a handler for that configuration. If there is no handler, it will return an error.
+// More information here https://.../docs
 func ListenConfig(host string, driverKey string) error {
-
 	go func() {
 		for {
 			select {
@@ -126,6 +133,10 @@ func ListenConfig(host string, driverKey string) error {
 
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
+	if strings.HasPrefix(host, "http") || strings.HasPrefix(host, "https") {
+		host = strings.ReplaceAll(host, "https://", "")
+		host = strings.ReplaceAll(host, "http://", "")
+	}
 	u, err := url.Parse(fmt.Sprintf("ws://%s/ws/v1/config_communication", host))
 	if err != nil {
 		return err

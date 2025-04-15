@@ -526,6 +526,22 @@ type GetSubdevicesResponseItem struct {
 
 type GetSubdevicesResponse []GetSubdevicesResponseItem
 
+type ExtraFieldType string
+
+const (
+	ExtraFieldTypeString  ExtraFieldType = "string"
+	ExtraFieldTypeNumber  ExtraFieldType = "number"
+	ExtraFieldTypeBoolean ExtraFieldType = "boolean"
+)
+
+type ExtraDeviceFieldsDefinition struct {
+	Name        string         `json:"name"`
+	Description string         `json:"description"`
+	Type        ExtraFieldType `json:"type"`
+}
+
+type GetDeviceExtraFieldsResponse = []*ExtraDeviceFieldsDefinition
+
 type GetEventsAvailableRequest struct{}
 type EventSchemaTranslationStrings struct {
 	Name        string `json:"name"`
