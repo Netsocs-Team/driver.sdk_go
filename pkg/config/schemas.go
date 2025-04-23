@@ -266,17 +266,12 @@ type GetHeatmapImageResponse struct {
 
 type GetDiscoveredDevicesRequest struct{}
 
-type ExtraDeviceFieldsValueDefinition struct {
-	Name  string `json:"name"`
-	Value string `json:"value"`
-}
-
 type GetDiscoveredDevicesResponseItem struct {
-	ID          string                             `json:"id"`
-	Name        string                             `json:"name"`
-	IP          string                             `json:"ip"`
-	Port        int                                `json:"port"`
-	ExtraFields []ExtraDeviceFieldsValueDefinition `json:"extrafields"`
+	ID          string                 `json:"id"`
+	Name        string                 `json:"name"`
+	IP          string                 `json:"ip"`
+	Port        string                 `json:"port"`
+	ExtraFields map[string]interface{} `json:"extrafields"`
 }
 
 type GetDiscoveredDevicesResponse []*GetDiscoveredDevicesResponseItem
