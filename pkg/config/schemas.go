@@ -264,6 +264,18 @@ type GetHeatmapImageResponse struct {
 	Filename string `json:"filename"`
 }
 
+type GetDiscoveredDevicesRequest struct{}
+
+type GetDiscoveredDevicesResponseItem struct {
+	ID          string                 `json:"id"`
+	Name        string                 `json:"name"`
+	IP          string                 `json:"ip"`
+	Port        string                 `json:"port"`
+	ExtraFields map[string]interface{} `json:"extrafields"`
+}
+
+type GetDiscoveredDevicesResponse []*GetDiscoveredDevicesResponseItem
+
 type SetBlockPersonToACRequest struct {
 	PersonID string `json:"personId"`
 }
