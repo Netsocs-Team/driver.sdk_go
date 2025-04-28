@@ -222,6 +222,7 @@ type NewVideoChannelObjectProps struct {
 	SnapshotFn  func(VideoChannelObject, ObjectController, SnapshotActionPayload) (string, error)
 	VideoclipFn func(VideoChannelObject, ObjectController, VideoClipActionPayload) (string, error)
 	PtzFn       func(VideoChannelObject, ObjectController, VideoChannelActionPtzControlPayload) error
+	SeekFn      func(VideoChannelObject, ObjectController, SeekPayload) error
 }
 
 func NewVideoChannelObject(props NewVideoChannelObjectProps) VideoChannelObject {
@@ -235,5 +236,6 @@ func NewVideoChannelObject(props NewVideoChannelObjectProps) VideoChannelObject 
 		snapshotFn:    props.SnapshotFn,
 		videoclipFn:   props.VideoclipFn,
 		ptzFn:         props.PtzFn,
+		seekFn:        props.SeekFn,
 	}
 }
