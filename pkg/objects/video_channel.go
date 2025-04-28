@@ -3,7 +3,6 @@ package objects
 import (
 	"fmt"
 	"strconv"
-	"time"
 
 	"github.com/goccy/go-json"
 )
@@ -52,10 +51,10 @@ type VideoChannelObject interface {
 }
 
 type SeekPayload struct {
-	PlaybackID string    `json:"playback_id"` //playback id to seek to
-	SeekTo     time.Time `json:"seek_to"`     //time to seek to
-	Speed      float32   `json:"speed"`       //speed to play the video, 1.0 is normal speed, 2.0 is double speed, 0.5 is half speed
-	Reverse    bool      `json:"reverse"`     //if true, play the video in reverse
+	PlaybackID string  `json:"playback_id"` //playback id to seek to
+	SeekTo     string  `json:"seek_to"`     //time to seek to
+	Speed      float32 `json:"speed"`       //speed to play the video, 1.0 is normal speed, 2.0 is double speed, 0.5 is half speed
+	Reverse    bool    `json:"reverse"`     //if true, play the video in reverse
 }
 
 type videoChannelObject struct {
