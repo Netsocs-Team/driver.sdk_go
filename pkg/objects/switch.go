@@ -88,6 +88,9 @@ func (s *switchObject) GetAvailableStates() []string {
 // New implements RegistrableObject.
 func (s *switchObject) Setup(oc ObjectController) error {
 	s.controller = oc
+	if s.switchActions.Setup == nil {
+		return nil
+	}
 	return s.switchActions.Setup(s, oc)
 }
 
