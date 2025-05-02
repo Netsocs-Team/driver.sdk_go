@@ -23,6 +23,7 @@ func (g *gpsTrackerObject) GetAvailableStates() []string {
 
 // GetMetadata implements GpsTrackerObject.
 func (g *gpsTrackerObject) GetMetadata() ObjectMetadata {
+	g.metadata.Type = "gps_tracker"
 	return g.metadata
 }
 
@@ -50,13 +51,13 @@ func (g *gpsTrackerObject) UpdateStateAttributes(attributes map[string]string) e
 	return g.controller.UpdateStateAttributes(g.GetMetadata().ObjectID, attributes)
 }
 
-type GPSTrackerObjectProps struct {
+type NewGPSTrackerObjectProps struct {
 	Metadata ObjectMetadata
 	// SetupFn is a function that will be called to setup the object
 	SetupFn func(GpsTrackerObject, ObjectController) error
 }
 
-func NewGpsTrackerObject(props GPSTrackerObjectProps) GpsTrackerObject {
+func NewGPSTrackerObject(props NewGPSTrackerObjectProps) GpsTrackerObject {
 	return &gpsTrackerObject{
 		metadata: props.Metadata,
 		setupFn:  props.SetupFn,
