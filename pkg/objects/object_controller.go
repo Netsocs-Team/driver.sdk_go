@@ -7,11 +7,13 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/Netsocs-Team/driver.sdk_go/internal/eventbus"
 	"github.com/Netsocs-Team/driver.sdk_go/pkg/logger"
 	"github.com/go-resty/resty/v2"
 	"github.com/goccy/go-json"
+
 	"github.com/gorilla/websocket"
 )
 
@@ -108,34 +110,57 @@ func (o *objectController) Decrement(objectId string) error {
 
 // AddEventTypes implements ObjectController.
 func (o *objectController) AddEventTypes(eventTypes []EventType) error {
+
+	_logger := logger.Logger()
+
 	if len(eventTypes) == 0 {
 		return errors.New("event types cannot be empty")
 	}
 
-	for _, e := range eventTypes {
-		if e.EventType == "" {
-			return errors.New("event type cannot be empty")
-		}
-		if e.Domain == "" {
-			return errors.New("domain cannot be empty")
-		}
+	var wg sync.WaitGroup
+	batchSize := 20
+	numEventTypes := len(eventTypes)
 
-		url := fmt.Sprintf("%s/objects/events/types/%s/%s", o.driverhub_host, e.Domain, e.EventType)
-		resp, err := o.httpClient.R().
-			SetHeader("Content-Type", "application/json").
-			SetBody(e).
-			Post(url)
-		if err != nil {
-			return err
+	for i := 0; i < numEventTypes; i += batchSize {
+		end := i + batchSize
+		if end > numEventTypes {
+			end = numEventTypes
 		}
-		if resp.StatusCode() >= 400 {
-			content := resp.String()
-			if strings.Contains(content, "Duplicate entry") {
-				continue
+		batch := eventTypes[i:end]
+
+		wg.Add(1)
+		go func(batch []EventType) {
+			defer wg.Done()
+			for _, e := range batch {
+				if e.EventType == "" {
+					_logger.Error("event type cannot be empty")
+					continue
+				}
+				if e.Domain == "" {
+					_logger.Error("domain cannot be empty")
+					continue
+				}
+
+				url := fmt.Sprintf("%s/objects/events/types/%s/%s", o.driverhub_host, e.Domain, e.EventType)
+				resp, err := o.httpClient.R().
+					SetHeader("Content-Type", "application/json").
+					SetBody(e).
+					Post(url)
+				if err != nil {
+					_logger.Error(fmt.Sprintf("failed to post event type: %s/%s", e.Domain, e.EventType))
+					continue
+				}
+				if resp.StatusCode() >= 400 {
+					content := resp.String()
+					if strings.Contains(content, "Duplicate entry") {
+						continue
+					}
+					_logger.Error(fmt.Sprintf("failed to post event type: %s/%s, error: %s", e.Domain, e.EventType, content))
+				}
 			}
-			return errors.New(content)
-		}
+		}(batch)
 	}
+	wg.Wait()
 	return nil
 }
 
