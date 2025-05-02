@@ -157,6 +157,7 @@ func (o *objectController) AddEventTypes(eventTypes []EventType) error {
 					}
 					_logger.Error(fmt.Sprintf("failed to post event type: %s/%s, error: %s", e.Domain, e.EventType, content))
 				}
+				_logger.Info(fmt.Sprintf("successfully posted event type: %s/%s", e.Domain, e.EventType))
 			}
 		}(batch)
 	}
