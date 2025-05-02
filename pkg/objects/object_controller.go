@@ -153,6 +153,7 @@ func (o *objectController) AddEventTypes(eventTypes []EventType) error {
 				if resp.StatusCode() >= 400 {
 					content := resp.String()
 					if strings.Contains(content, "Duplicate entry") {
+						_logger.Info(fmt.Sprintf("successfully posted event type: %s/%s", e.Domain, e.EventType))
 						continue
 					}
 					_logger.Error(fmt.Sprintf("failed to post event type: %s/%s, error: %s", e.Domain, e.EventType, content))
