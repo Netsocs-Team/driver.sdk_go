@@ -108,6 +108,10 @@ func (d *NetsocsDriverClient) buildURL(uri string) string {
 	return fmt.Sprintf("http://%s/api/v1/%s", d.driverHubHost, uri)
 }
 
+func (d *NetsocsDriverClient) GetDriverhubHost() string {
+	return d.driverHubHost
+}
+
 func (c *NetsocsDriverClient) RegisterObject(obj objects.RegistrableObject) error {
 	return c.objectsRunner.RegisterObject(obj)
 }

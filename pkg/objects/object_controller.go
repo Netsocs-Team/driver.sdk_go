@@ -106,8 +106,78 @@ func (o *objectController) Decrement(objectId string) error {
 	return nil
 }
 
-// AddEventTypes implements ObjectController.
+type EventTypeResponse struct {
+	Domain             string `json:"domain"`
+	DisplayName        string `json:"display_name"`
+	DisplayDescription string `json:"display_description"`
+	EventType          string `json:"event_type"`
+	IsHidden           bool   `json:"is_hidden"`
+	EventLevel         string `json:"event_level"`
+	Color              string `json:"color"`
+	ShowColor          bool   `json:"show_color"`
+	Origin             string `json:"origin"`
+	CreatedAt          string `json:"created_at"`
+	UpdatedAt          string `json:"updated_at"`
+}
+
+type EventTypesBatch struct {
+	Successful []EventTypeResponse `json:"successful"`
+	Failed     []EventTypeResponse `json:"failed"`
+}
+
 func (o *objectController) AddEventTypes(eventTypes []EventType) error {
+
+	url := fmt.Sprintf("%s/objects/events/types/batch", o.driverhub_host)
+
+	if len(eventTypes) == 0 {
+		return errors.New("event types cannot be empty")
+	}
+
+	batchSize := 30
+	numEventTypes := len(eventTypes)
+
+	for i := 0; i < numEventTypes; i += batchSize {
+		end := i + batchSize
+		if end > numEventTypes {
+			end = numEventTypes
+		}
+		batch := eventTypes[i:end]
+
+		resp, err := o.httpClient.R().
+			SetHeader("Content-Type", "application/json").
+			SetBody(batch).
+			Post(url)
+
+		if err != nil {
+			return err
+		}
+
+		if resp.StatusCode() == 404 {
+			// If the endpoint is not found, we assume that the driverhub does not support batch event type creation.
+			// We will fall back to the old method of creating event types one by one.
+			return o.AddEventTypesFallback(batch)
+		}
+
+		if resp.StatusCode() == 207 {
+			// If the response is 207, we assume that the event types were created successfully.
+			// We will return nil to indicate success.
+			var eventTypesBatch EventTypesBatch
+			err = json.Unmarshal(resp.Body(), &eventTypesBatch)
+			if err != nil {
+				return err
+			}
+			for _, failed := range eventTypesBatch.Failed {
+				logger.Logger().Error(fmt.Sprintf("failed to post event type: %s/%s", failed.Domain, failed.EventType))
+			}
+		}
+
+	}
+	return nil
+}
+
+// AddEventTypes implements ObjectController.
+func (o *objectController) AddEventTypesFallback(eventTypes []EventType) error {
+
 	if len(eventTypes) == 0 {
 		return errors.New("event types cannot be empty")
 	}
