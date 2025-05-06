@@ -120,7 +120,7 @@ type EventTypeResponse struct {
 	UpdatedAt          string `json:"updated_at"`
 }
 
-type EventTypesBatch struct {
+type EventTypesBatchResponse struct {
 	Successful []EventTypeResponse `json:"successful"`
 	Failed     []EventTypeResponse `json:"failed"`
 }
@@ -158,10 +158,10 @@ func (o *objectController) AddEventTypes(eventTypes []EventType) error {
 			return o.AddEventTypesFallback(batch)
 		}
 
-		if resp.StatusCode() == 207 {
-			// If the response is 207, we assume that the event types were created successfully.
+		if resp.StatusCode() == 201 || resp.StatusCode() == 207 {
+			// If the response is 201 or 207, we assume that the event types were created successfully.
 			// We will return nil to indicate success.
-			var eventTypesBatch EventTypesBatch
+			var eventTypesBatch EventTypesBatchResponse
 			err = json.Unmarshal(resp.Body(), &eventTypesBatch)
 			if err != nil {
 				return err
@@ -169,6 +169,14 @@ func (o *objectController) AddEventTypes(eventTypes []EventType) error {
 			for _, failed := range eventTypesBatch.Failed {
 				logger.Logger().Error(fmt.Sprintf("failed to post event type: %s/%s", failed.Domain, failed.EventType))
 			}
+		}
+
+		if resp.StatusCode() >= 400 {
+			content := resp.String()
+			if strings.Contains(content, "all event types failed to create") {
+				return errors.New("all event types failed to create")
+			}
+			return errors.New(content)
 		}
 
 	}
