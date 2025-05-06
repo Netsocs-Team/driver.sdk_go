@@ -133,11 +133,17 @@ func ListenConfig(host string, driverKey string) error {
 
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
-	if strings.HasPrefix(host, "http") || strings.HasPrefix(host, "https") {
-		host = strings.ReplaceAll(host, "https://", "")
-		host = strings.ReplaceAll(host, "http://", "")
+	var wsScheme string
+	if strings.HasPrefix(host, "https://") {
+		wsScheme = "wss"
+		host = strings.Replace(host, "https://", "", 1)
+	} else if strings.HasPrefix(host, "http://") {
+		wsScheme = "ws"
+		host = strings.Replace(host, "http://", "", 1)
+	} else {
+		wsScheme = "ws"
 	}
-	u, err := url.Parse(fmt.Sprintf("ws://%s/ws/v1/config_communication", host))
+	u, err := url.Parse(fmt.Sprintf("%s://%s/ws/v1/config_communication", wsScheme, host))
 	if err != nil {
 		return err
 	}
