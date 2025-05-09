@@ -15,6 +15,7 @@ type ObjectMetadata struct {
 	I18n     map[string]string `json:"i18n"`
 	DeviceID string            `json:"device_id"`
 	Tags     []string          `json:"tags"`
+	ParentID string            `json:"parent_id"`
 }
 
 type ObjectAction struct {
