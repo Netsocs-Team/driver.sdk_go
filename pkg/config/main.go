@@ -138,11 +138,17 @@ func ListenConfig(host string, driverKey string) error {
 		host = strings.ReplaceAll(host, "http://", "")
 	}
 
-	wsScheme := "ws"
+	protocol := "ws"
 	if strings.HasPrefix(host, "https://") {
-		wsScheme = "wss"
+		protocol = "wss"
+		host = strings.TrimPrefix(host, "https://")
+	} else if strings.HasPrefix(host, "http://") {
+		host = strings.TrimPrefix(host, "http://")
 	}
-	u := url.URL{Scheme: wsScheme, Host: host, Path: "/ws/v1/config_communication"}
+	u, err := url.Parse(fmt.Sprintf("%s://%s/ws/v1/config_communication", protocol, host))
+	if err != nil {
+		return err
+	}
 
 	log.Printf("connecting to %s", u.String())
 
