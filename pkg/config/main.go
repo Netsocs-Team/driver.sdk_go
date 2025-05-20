@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"strings"
 
 	"github.com/gorilla/websocket"
 )
@@ -126,7 +127,15 @@ func ListenConfig(host string, driverKey string) error {
 
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
-	u, err := url.Parse(fmt.Sprintf("ws://%s/ws/v1/config_communication", host))
+	protocol := "ws"
+	if strings.HasPrefix(host, "https://") {
+		protocol = "wss"
+		host = strings.TrimPrefix(host, "https://")
+	} else if strings.HasPrefix(host, "http://") {
+		protocol = "ws"
+		host = strings.TrimPrefix(host, "http://")
+	}
+	u, err := url.Parse(fmt.Sprintf("%s://%s/ws/v1/config_communication", protocol, host))
 	if err != nil {
 		return err
 	}
