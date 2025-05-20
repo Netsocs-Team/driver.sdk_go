@@ -264,6 +264,18 @@ type GetHeatmapImageResponse struct {
 	Filename string `json:"filename"`
 }
 
+type GetDiscoveredDevicesRequest struct{}
+
+type GetDiscoveredDevicesResponseItem struct {
+	ID          string                 `json:"id"`
+	Name        string                 `json:"name"`
+	IP          string                 `json:"ip"`
+	Port        string                 `json:"port"`
+	ExtraFields map[string]interface{} `json:"extrafields"`
+}
+
+type GetDiscoveredDevicesResponse []*GetDiscoveredDevicesResponseItem
+
 type SetBlockPersonToACRequest struct {
 	PersonID string `json:"personId"`
 }
@@ -525,6 +537,22 @@ type GetSubdevicesResponseItem struct {
 }
 
 type GetSubdevicesResponse []GetSubdevicesResponseItem
+
+type ExtraFieldType string
+
+const (
+	ExtraFieldTypeString  ExtraFieldType = "string"
+	ExtraFieldTypeNumber  ExtraFieldType = "number"
+	ExtraFieldTypeBoolean ExtraFieldType = "boolean"
+)
+
+type ExtraDeviceFieldsDefinition struct {
+	Name        string         `json:"name"`
+	Description string         `json:"description"`
+	Type        ExtraFieldType `json:"type"`
+}
+
+type GetDeviceExtraFieldsResponse = []*ExtraDeviceFieldsDefinition
 
 type GetEventsAvailableRequest struct{}
 type EventSchemaTranslationStrings struct {
