@@ -137,11 +137,13 @@ func ListenConfig(host string, driverKey string) error {
 		host = strings.ReplaceAll(host, "https://", "")
 		host = strings.ReplaceAll(host, "http://", "")
 	}
-	u, err := url.Parse(fmt.Sprintf("ws://%s/ws/v1/config_communication", host))
-	if err != nil {
-		return err
+
+	wsScheme := "ws"
+	if strings.HasPrefix(host, "https://") {
+		wsScheme = "wss"
 	}
-	// u := url.URL{Scheme: "ws", Host: host, Path: "/ws/v1/config_communication"}
+	u := url.URL{Scheme: wsScheme, Host: host, Path: "/ws/v1/config_communication"}
+
 	log.Printf("connecting to %s", u.String())
 
 	c, _, err := websocket.DefaultDialer.Dial(u.String(), http.Header{
