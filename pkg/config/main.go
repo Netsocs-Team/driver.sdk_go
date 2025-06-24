@@ -68,39 +68,17 @@ type defaultDataResponse struct {
 // This function, upon receiving a configuration, will look in the map of handlers
 // to see if there is a handler for that configuration. If there is no handler, it will return an error.
 // More information here https://.../docs
-func ListenConfig(host string, driverKey string) error {
+func ListenConfig(host string, driverKey string, siteId string) error {
 	go func() {
-		for {
-			select {
-			case message := <-messages:
-				handler := handlersMap[message.ConfigKey]
-				if handler != nil {
-					response, err := handler(message.Value, message.DeviceData)
-					if err == nil {
-						if response == "" || response == "null" {
-							tmp := &defaultDataResponse{
-								Error: false,
-								Msg:   "OK",
-							}
-							jsondata, err := json.Marshal(tmp)
-							if err != nil {
-								fmt.Println("Error in handler:", err)
-							} else {
-								responses <- &s_response{
-									RequestId: message.RequestID,
-									Data:      string(jsondata),
-								}
-							}
-						} else {
-							responses <- &s_response{
-								RequestId: message.RequestID,
-								Data:      response,
-							}
-						}
-					} else {
+		for message := range messages {
+			handler := handlersMap[message.ConfigKey]
+			if handler != nil {
+				response, err := handler(message.Value, message.DeviceData)
+				if err == nil {
+					if response == "" || response == "null" {
 						tmp := &defaultDataResponse{
-							Error: true,
-							Msg:   err.Error(),
+							Error: false,
+							Msg:   "OK",
 						}
 						jsondata, err := json.Marshal(tmp)
 						if err != nil {
@@ -111,11 +89,16 @@ func ListenConfig(host string, driverKey string) error {
 								Data:      string(jsondata),
 							}
 						}
+					} else {
+						responses <- &s_response{
+							RequestId: message.RequestID,
+							Data:      response,
+						}
 					}
 				} else {
 					tmp := &defaultDataResponse{
 						Error: true,
-						Msg:   fmt.Sprintf("'%s' not found on the driver", message.ConfigKey),
+						Msg:   err.Error(),
 					}
 					jsondata, err := json.Marshal(tmp)
 					if err != nil {
@@ -127,8 +110,23 @@ func ListenConfig(host string, driverKey string) error {
 						}
 					}
 				}
+			} else {
+				tmp := &defaultDataResponse{
+					Error: true,
+					Msg:   fmt.Sprintf("'%s' not found on the driver", message.ConfigKey),
+				}
+				jsondata, err := json.Marshal(tmp)
+				if err != nil {
+					fmt.Println("Error in handler:", err)
+				} else {
+					responses <- &s_response{
+						RequestId: message.RequestID,
+						Data:      string(jsondata),
+					}
+				}
 			}
 		}
+
 	}()
 
 	interrupt := make(chan os.Signal, 1)
@@ -145,7 +143,7 @@ func ListenConfig(host string, driverKey string) error {
 	} else if strings.HasPrefix(host, "http://") {
 		host = strings.TrimPrefix(host, "http://")
 	}
-	u, err := url.Parse(fmt.Sprintf("%s://%s/ws/v1/config_communication", protocol, host))
+	u, err := url.Parse(fmt.Sprintf("%s://%s/ws/v1/config_communication?site_id=%s", protocol, host, siteId))
 	if err != nil {
 		return err
 	}
@@ -207,9 +205,8 @@ func ListenConfig(host string, driverKey string) error {
 				log.Println("write close:", err)
 				return err
 			}
-			select {
-			case <-done:
-			}
+			<-done
+
 			return nil
 		}
 	}

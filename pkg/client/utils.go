@@ -1,9 +1,7 @@
 package client
 
 import (
-	"encoding/json"
 	"fmt"
-	"net/http"
 
 	"github.com/go-resty/resty/v2"
 )
@@ -11,32 +9,6 @@ import (
 type driverHubVersionResponse struct {
 	GitCommitSha string `json:"git_commit_sha"`
 	Version      string `json:"version"`
-}
-
-func (n *NetsocsDriverClient) checkVersion() error {
-	resp, err := http.Get(n.buildURL("/api/v1/version"))
-
-	if err != nil {
-		return err
-	}
-
-	defer resp.Body.Close()
-	data := driverHubVersionResponse{}
-	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-		return err
-	}
-
-	if data.Version == "" {
-		return fmt.Errorf("driver hub version must be greater than 2.0.0")
-	}
-
-	versionMajor := data.Version[0]
-
-	if versionMajor < '2' {
-		return fmt.Errorf("driver hub version must be greater than 2.0.0")
-	}
-
-	return nil
 }
 
 type rtsp2StreamIdRequest struct {
@@ -49,7 +21,8 @@ type rtsp2StreamIdRequest struct {
 }
 
 type RTSPToStreamIDOpts struct {
-	Record bool
+	Record         bool
+	SourceOnDemand bool `json:"source_on_demand,omitempty"`
 }
 
 func (n *NetsocsDriverClient) RTSPToStreamID(rtsp string, streamID string, opts ...RTSPToStreamIDOpts) (videoEngine string, err error) {

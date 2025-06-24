@@ -18,6 +18,15 @@ type NetsocsDriverClient struct {
 	isSSL         bool
 	DriverName    string
 	objectsRunner objects.ObjectRunner
+	siteID        string
+}
+
+func (n *NetsocsDriverClient) SetSiteID(siteID string) {
+	n.siteID = siteID
+}
+
+func (n *NetsocsDriverClient) GetSiteID() string {
+	return n.siteID
 }
 
 func NewNetsocsDriverClient(driverKey string, driverHubHost string, isSSL bool) *NetsocsDriverClient {
@@ -60,6 +69,9 @@ func New() (*NetsocsDriverClient, error) {
 
 	client := NewNetsocsDriverClient(fileData.DriverKey, fileData.DriverHubHost, false)
 	client.DriverName = fileData.Name
+	if client.GetSiteID() != "" {
+		client.SetSiteID(fileData.SiteID)
+	}
 	return client, nil
 }
 
@@ -94,7 +106,7 @@ func (d *NetsocsDriverClient) UploadFileAndGetURL(file *os.File) (string, error)
 }
 
 func (d *NetsocsDriverClient) ListenConfig() error {
-	return config.ListenConfig(d.driverHubHost, d.driverKey)
+	return config.ListenConfig(d.driverHubHost, d.driverKey, d.siteID)
 }
 
 func (d *NetsocsDriverClient) AddConfigHandler(configKey config.NetsocsConfigKey, configHandler config.FuncConfigHandler) error {
