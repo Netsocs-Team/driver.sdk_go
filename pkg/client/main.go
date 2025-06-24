@@ -69,9 +69,9 @@ func New() (*NetsocsDriverClient, error) {
 
 	client := NewNetsocsDriverClient(fileData.DriverKey, fileData.DriverHubHost, false)
 	client.DriverName = fileData.Name
-	if client.GetSiteID() != "" {
-		client.SetSiteID(fileData.SiteID)
-	}
+
+	client.SetSiteID(fileData.SiteID)
+
 	return client, nil
 }
 
