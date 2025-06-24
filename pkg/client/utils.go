@@ -27,6 +27,9 @@ type RTSPToStreamIDOpts struct {
 
 func (n *NetsocsDriverClient) RTSPToStreamID(rtsp string, streamID string, opts ...RTSPToStreamIDOpts) (videoEngine string, err error) {
 	videoEngineDefaultId := "netsocs_native.video_engine.default"
+	if n.videoEngineID != "" {
+		videoEngineDefaultId = n.videoEngineID
+	}
 	videoEngineDefaultDomain := "netsocs_native.video_engine"
 	req := rtsp2StreamIdRequest{}
 	req.ObjectID = []string{videoEngineDefaultId}
