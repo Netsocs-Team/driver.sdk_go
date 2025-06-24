@@ -38,15 +38,16 @@ func (c *ConfigMessage) GetRawMessage() []byte {
 }
 
 type ConfigMessageDeviceData struct {
-	Username    string                 `json:"username"`
-	Password    string                 `json:"password"`
-	IP          string                 `json:"ip_address_public"`
-	Port        int                    `json:"port"`
-	IsSSL       bool                   `json:"is_ssl"`
-	SSLPort     int                    `json:"ssl_port"`
-	ID          int                    `json:"id_device"`
-	ChildID     string                 `json:"child_id"`
-	Extrafields map[string]interface{} `json:"extrafields"`
+	Username         string                 `json:"username"`
+	Password         string                 `json:"password"`
+	IP               string                 `json:"ip_address_public"`
+	Port             int                    `json:"port"`
+	IsSSL            bool                   `json:"is_ssl"`
+	SSLPort          int                    `json:"ssl_port"`
+	ID               int                    `json:"id_device"`
+	ChildID          string                 `json:"child_id"`
+	Extrafields      map[string]interface{} `json:"extrafields"`
+	SetVideoEngineID func(string)           `json:"-"`
 }
 
 var messages = make(chan *ConfigMessage)
@@ -68,7 +69,7 @@ type defaultDataResponse struct {
 // This function, upon receiving a configuration, will look in the map of handlers
 // to see if there is a handler for that configuration. If there is no handler, it will return an error.
 // More information here https://.../docs
-func ListenConfig(host string, driverKey string, siteId string) error {
+func ListenConfig(host string, driverKey string, siteId string, setVideoEngineID func(string)) error {
 	go func() {
 		for message := range messages {
 			handler := handlersMap[message.ConfigKey]
@@ -175,6 +176,22 @@ func ListenConfig(host string, driverKey string, siteId string) error {
 			} else {
 				messages <- configMessage
 			}
+
+			if configMessage.RequestID == "SAVE_VIDEO_ENGINE" {
+				type msg struct {
+					VideoEngine string `json:"video_engine"`
+				}
+				var msgData msg
+				err = json.Unmarshal(message, &msgData)
+				if err != nil {
+					log.Println("unmarshal msgData:", err)
+				} else {
+					if setVideoEngineID != nil {
+						setVideoEngineID(msgData.VideoEngine)
+					}
+				}
+			}
+
 			log.Printf("recv: %s", message)
 		}
 	}()

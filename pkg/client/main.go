@@ -19,6 +19,11 @@ type NetsocsDriverClient struct {
 	DriverName    string
 	objectsRunner objects.ObjectRunner
 	siteID        string
+	videoEngineID string
+}
+
+func (n *NetsocsDriverClient) SetVideoEngineID(videoEngineID string) {
+	n.videoEngineID = videoEngineID
 }
 
 func (n *NetsocsDriverClient) SetSiteID(siteID string) {
@@ -106,7 +111,10 @@ func (d *NetsocsDriverClient) UploadFileAndGetURL(file *os.File) (string, error)
 }
 
 func (d *NetsocsDriverClient) ListenConfig() error {
-	return config.ListenConfig(d.driverHubHost, d.driverKey, d.siteID)
+
+	return config.ListenConfig(d.driverHubHost, d.driverKey, d.siteID, func(videoEngineID string) {
+		d.SetVideoEngineID(videoEngineID)
+	})
 }
 
 func (d *NetsocsDriverClient) AddConfigHandler(configKey config.NetsocsConfigKey, configHandler config.FuncConfigHandler) error {
