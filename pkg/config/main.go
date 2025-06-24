@@ -177,7 +177,7 @@ func ListenConfig(host string, driverKey string, siteId string, setVideoEngineID
 				messages <- configMessage
 			}
 
-			if configMessage.RequestID == "SAVE_VIDEO_ENGINE" {
+			if configMessage.ConfigKey == "SAVE_VIDEO_ENGINE" {
 				type msg struct {
 					VideoEngine string `json:"video_engine"`
 				}
