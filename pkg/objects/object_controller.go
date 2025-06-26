@@ -1,6 +1,7 @@
 package objects
 
 import (
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"net/http"
@@ -325,16 +326,34 @@ type wsMessage struct {
 func (o *objectController) ListenActionRequests() error {
 	_logger := logger.Logger()
 
-	url := strings.ReplaceAll(o.driverhub_host, "https", "wss")
-	url = strings.ReplaceAll(url, "http", "ws")
+	// Start with the driverhub host
+	url := o.driverhub_host
 
-	if !strings.HasPrefix(url, "ws") && !strings.HasPrefix(url, "wss") {
+	// Convert HTTP/HTTPS to WebSocket protocol
+	url = strings.ReplaceAll(url, "https://", "wss://")
+	url = strings.ReplaceAll(url, "http://", "ws://")
+
+	// If the URL doesn't have a protocol, assume it's HTTP and convert to WS
+	if !strings.HasPrefix(url, "ws://") && !strings.HasPrefix(url, "wss://") {
 		url = fmt.Sprintf("ws://%s", url)
 	}
 
-	url = fmt.Sprintf("%s/objects/ws", url)
+	// Check if the URL already contains a path that looks like a WebSocket endpoint
+	// If it doesn't end with /objects/ws, append it
+	if !strings.HasSuffix(url, "/objects/ws") && !strings.Contains(url, "/ws/") {
+		// Remove trailing slash if present to avoid double slashes
+		url = strings.TrimSuffix(url, "/")
+		url = fmt.Sprintf("%s/objects/ws", url)
+	}
 
-	c, _, err := websocket.DefaultDialer.Dial(url, http.Header{
+	// Create a custom dialer that accepts self-signed certificates
+	dialer := websocket.Dialer{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+	}
+
+	c, _, err := dialer.Dial(url, http.Header{
 		"X-Auth-Token": []string{o.token},
 	})
 	if err != nil {

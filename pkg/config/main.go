@@ -1,6 +1,7 @@
 package config
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -132,26 +133,37 @@ func ListenConfig(host string, driverKey string, siteId string, token string, dr
 
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
-	if strings.HasPrefix(host, "http") || strings.HasPrefix(host, "https") {
-		host = strings.ReplaceAll(host, "https://", "")
-		host = strings.ReplaceAll(host, "http://", "")
+
+	// Start with the original host
+	wsURL := host
+
+	// Convert HTTP/HTTPS to WebSocket protocol
+	wsURL = strings.ReplaceAll(wsURL, "https://", "wss://")
+	wsURL = strings.ReplaceAll(wsURL, "http://", "ws://")
+
+	// If the URL doesn't have a protocol, assume it's HTTP and convert to WS
+	if !strings.HasPrefix(wsURL, "ws://") && !strings.HasPrefix(wsURL, "wss://") {
+		wsURL = fmt.Sprintf("ws://%s", wsURL)
 	}
 
-	protocol := "ws"
-	if strings.HasPrefix(host, "https://") {
-		protocol = "wss"
-		host = strings.TrimPrefix(host, "https://")
-	} else if strings.HasPrefix(host, "http://") {
-		host = strings.TrimPrefix(host, "http://")
-	}
-	u, err := url.Parse(fmt.Sprintf("%s://%s/ws/v1/config_communication?site_id=%s&driver_id=%s", protocol, host, siteId, driverID))
+	// Add the WebSocket path and query parameters
+	wsURL = fmt.Sprintf("%s/ws/v1/config_communication?site_id=%s&driver_id=%s", wsURL, siteId, driverID)
+
+	u, err := url.Parse(wsURL)
 	if err != nil {
 		return err
 	}
 
 	log.Printf("connecting to %s", u.String())
 
-	c, _, err := websocket.DefaultDialer.Dial(u.String(), http.Header{
+	// Create a custom dialer that accepts self-signed certificates
+	dialer := websocket.Dialer{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+	}
+
+	c, _, err := dialer.Dial(u.String(), http.Header{
 		"Authorization": []string{driverKey},
 		"X-Auth-Token":  []string{token},
 	})
