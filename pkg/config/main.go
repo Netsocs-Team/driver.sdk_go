@@ -1,6 +1,7 @@
 package config
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -8,8 +9,8 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
-	"strings"
 
+	"github.com/Netsocs-Team/driver.sdk_go/pkg/tools"
 	"github.com/gorilla/websocket"
 )
 
@@ -69,7 +70,7 @@ type defaultDataResponse struct {
 // This function, upon receiving a configuration, will look in the map of handlers
 // to see if there is a handler for that configuration. If there is no handler, it will return an error.
 // More information here https://.../docs
-func ListenConfig(host string, driverKey string, siteId string, setVideoEngineID func(string)) error {
+func ListenConfig(host string, driverKey string, siteId string, token string, driverID string, setVideoEngineID func(string)) error {
 	go func() {
 		for message := range messages {
 			handler := handlersMap[message.ConfigKey]
@@ -132,27 +133,28 @@ func ListenConfig(host string, driverKey string, siteId string, setVideoEngineID
 
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
-	if strings.HasPrefix(host, "http") || strings.HasPrefix(host, "https") {
-		host = strings.ReplaceAll(host, "https://", "")
-		host = strings.ReplaceAll(host, "http://", "")
-	}
 
-	protocol := "ws"
-	if strings.HasPrefix(host, "https://") {
-		protocol = "wss"
-		host = strings.TrimPrefix(host, "https://")
-	} else if strings.HasPrefix(host, "http://") {
-		host = strings.TrimPrefix(host, "http://")
-	}
-	u, err := url.Parse(fmt.Sprintf("%s://%s/ws/v1/config_communication?site_id=%s", protocol, host, siteId))
+	// Convert the URL using the utility function with query parameters
+	path := fmt.Sprintf("ws/v1/config_communication?site_id=%s&driver_id=%s", siteId, driverID)
+	wsURL := tools.ConvertToWebSocketURL(host, path)
+
+	u, err := url.Parse(wsURL)
 	if err != nil {
 		return err
 	}
 
 	log.Printf("connecting to %s", u.String())
 
-	c, _, err := websocket.DefaultDialer.Dial(u.String(), http.Header{
+	// Create a custom dialer that accepts self-signed certificates
+	dialer := websocket.Dialer{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+	}
+
+	c, _, err := dialer.Dial(u.String(), http.Header{
 		"Authorization": []string{driverKey},
+		"X-Auth-Token":  []string{token},
 	})
 	if err != nil {
 		log.Fatal("dial:", err)
