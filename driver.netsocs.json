@@ -1,6 +1,9 @@
 {
     "driver_key": "kUpofOW2oEczzLVeoqGn5wG9ocUG1Q5+B9DmIACxLiaGj5v8pIDuJul/6o7A9nDbslHjYR6To0YkIlpj35Nohelh0POFs6fXS5ZN2dUP9QKj1DwZDUy5BdfoNJ90nuEMhI+pDw2sFhCBt1JMz/bM720TCYOGW/h6mO4TNpU9iJMtkOrd2nwJVeP473LUQzzkRbPIHIvXTIOQAkEr4bxBJeZceMXd2R1EuJWnMag5qRLsQ9sQrJ51yMDDRcn8hWUXfpDiYDjmVqcwa6wPSazynf2XTKk+4x0fzgjAwQfceVSgYh9x7FEvtDq/BujNdND73+d8xzFw6ukEFyWoJmX2YqQl9NnUMV/DMiLWeMhTFLCJhKTYTLsCm9+J/nRCMdenc/qxvhepy5coGc4HQ7aMoBAYaZj9HWkINi8a+ah7dgUNthZV/HA9NjXLSRojVQLFIrGW+5Gh3f09zkq7Gs1agpBxc/zL4NDMgk1UYbBtX5p5kYtxxZyunqcZS6Ag3lR3xMJMKd5S8bmJxJEurn9cv5cHH1zZEewIH5wpZX4Z0OH69f/gMaQJI+38at+tqrySke/G/W9mRREHnUfbFA+TIgOVTO8O9GmcouwiWGpJRvx0NKkaCuKIC0TZA3WZds3qTvEjYxDCdcsDtHAF1Uqx6J1yt5d2AExm5Sx7SPGdr20MsjfTEMljm0PZaJyAlaM0UYcqt6R9OKSJx0rU1pMvMo1j+RvlmvZdeDlDuq0+U5ITO9ExX/4nCsWT51l8s6N1vyTN+emWSdJRlbWDBpze/HDD3mJJDsXXDKp8jRUI4ud+G5ZemOg41yjctdmmho7axfqrKW9P9WtyYCRgbNlR3nHmo9Ug1FrkkFdsXWEW1Q==",
-    "driver_hub_host": "http://24.126.101.169:8080/api/netsocs/dh",
+    "driver_hub_host": "http://localhost:3196",
+    "token": "1234567890",
+    "driver_id": "1234567890",
+    "site_id": "1234567890",
     "event_server_host": "24.126.101.169",
     "version": "1.0.0",
     "name": "invixium BIOMETRIC",

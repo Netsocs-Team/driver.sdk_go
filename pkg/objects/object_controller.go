@@ -10,6 +10,7 @@ import (
 
 	"github.com/Netsocs-Team/driver.sdk_go/internal/eventbus"
 	"github.com/Netsocs-Team/driver.sdk_go/pkg/logger"
+	"github.com/Netsocs-Team/driver.sdk_go/pkg/tools"
 	"github.com/go-resty/resty/v2"
 	"github.com/goccy/go-json"
 	"github.com/gorilla/websocket"
@@ -35,6 +36,7 @@ type ObjectController interface {
 type objectController struct {
 	driverhub_host string
 	driver_key     string
+	token          string
 	httpClient     *resty.Client
 }
 
@@ -44,6 +46,7 @@ func (o *objectController) GetState(objectId string) (state StateRecord, err err
 	var paginated PaginatedStateRecord
 	resp, err := o.httpClient.R().
 		SetHeader("Content-Type", "application/json").
+		SetHeader("X-Auth-Token", o.token).
 		Get(url)
 	if err != nil {
 		return state, err
@@ -71,6 +74,7 @@ func (o *objectController) UpdateResultAttributes(executionID string, attributes
 	body := map[string]map[string]string{"result": attributes}
 	_, err := o.httpClient.R().
 		SetHeader("Content-Type", "application/json").
+		SetHeader("X-Auth-Token", o.token).
 		SetBody(body).
 		Put(url)
 	return err
@@ -81,6 +85,7 @@ func (o *objectController) Increment(objectId string) error {
 	url := fmt.Sprintf("%s/objects/states/%s/increment", o.driverhub_host, objectId)
 	resp, err := o.httpClient.R().
 		SetHeader("Content-Type", "application/json").
+		SetHeader("X-Auth-Token", o.token).
 		Put(url)
 	if err != nil {
 		return err
@@ -96,6 +101,7 @@ func (o *objectController) Decrement(objectId string) error {
 	url := fmt.Sprintf("%s/objects/states/%s/decrement", o.driverhub_host, objectId)
 	resp, err := o.httpClient.R().
 		SetHeader("Content-Type", "application/json").
+		SetHeader("X-Auth-Token", o.token).
 		Put(url)
 	if err != nil {
 		return err
@@ -145,6 +151,7 @@ func (o *objectController) AddEventTypes(eventTypes []EventType) error {
 
 		resp, err := o.httpClient.R().
 			SetHeader("Content-Type", "application/json").
+			SetHeader("X-Auth-Token", o.token).
 			SetBody(batch).
 			Post(url)
 
@@ -201,6 +208,7 @@ func (o *objectController) AddEventTypesFallback(eventTypes []EventType) error {
 		url := fmt.Sprintf("%s/objects/events/types/%s/%s", o.driverhub_host, e.Domain, e.EventType)
 		resp, err := o.httpClient.R().
 			SetHeader("Content-Type", "application/json").
+			SetHeader("X-Auth-Token", o.token).
 			SetBody(e).
 			Post(url)
 		if err != nil {
@@ -222,6 +230,7 @@ func (o *objectController) DisabledObject(objectId string) error {
 	url := fmt.Sprintf("%s/objects/%s/disabled", o.driverhub_host, objectId)
 	resp, err := o.httpClient.R().
 		SetHeader("Content-Type", "application/json").
+		SetHeader("X-Auth-Token", o.token).
 		Put(url)
 	if err != nil {
 		return err
@@ -235,6 +244,7 @@ func (o *objectController) EnabledObject(objectId string) error {
 	url := fmt.Sprintf("%s/objects/%s/enabled", o.driverhub_host, objectId)
 	resp, err := o.httpClient.R().
 		SetHeader("Content-Type", "application/json").
+		SetHeader("X-Auth-Token", o.token).
 		Put(url)
 	if err != nil {
 		return err
@@ -261,6 +271,7 @@ func (o *objectController) UpdateStateAttributes(objectId string, attributes map
 	body := map[string]map[string]string{"state_additional_properties": attributes}
 	_, err := o.httpClient.R().
 		SetHeader("Content-Type", "application/json").
+		SetHeader("X-Auth-Token", o.token).
 		SetBody(body).
 		Put(url)
 	return err
@@ -277,6 +288,7 @@ func (o *objectController) UpdateStateAttributesBatch(objectsStates []ObjectStat
 	}
 	_, err := o.httpClient.R().
 		SetHeader("Content-Type", "application/json").
+		SetHeader("X-Auth-Token", o.token).
 		SetBody(body).
 		Put(url)
 	return err
@@ -288,6 +300,7 @@ func (o *objectController) NewAction(action ObjectAction) error {
 
 	resp, err := o.httpClient.R().
 		SetHeader("Content-Type", "application/json").
+		SetHeader("X-Auth-Token", o.token).
 		SetBody(action).
 		Post(url)
 
@@ -321,7 +334,9 @@ func (o *objectController) ListenActionRequests() error {
 
 	url = fmt.Sprintf("%s/objects/ws", url)
 
-	c, _, err := websocket.DefaultDialer.Dial(url, http.Header{})
+	c, _, err := websocket.DefaultDialer.Dial(url, http.Header{
+		"X-Auth-Token": []string{o.token},
+	})
 	if err != nil {
 		return err
 	}
@@ -391,6 +406,7 @@ func (o *objectController) CreateObject(obj RegistrableObject) error {
 	url := fmt.Sprintf("%s/objects", o.driverhub_host)
 	resp, err := o.httpClient.R().
 		SetHeader("Content-Type", "application/json").
+		SetHeader("X-Auth-Token", o.token).
 		SetBody(req).
 		Post(url)
 	if err != nil {
@@ -411,6 +427,7 @@ func (o *objectController) SetState(objectId, state string) error {
 	body := map[string]string{"state": state}
 	resp, err := o.httpClient.R().
 		SetHeader("Content-Type", "application/json").
+		SetHeader("X-Auth-Token", o.token).
 		SetBody(body).
 		Put(url)
 
@@ -431,6 +448,8 @@ func NewObjectController(driverhubHost string, driverKey string) ObjectControlle
 		panic("driverhub host cannot be empty")
 	}
 
+	fileData, _ := tools.GetDriverNetsocsDotJsonContent("driver.netsocs.json")
+
 	if !strings.HasPrefix(driverhubHost, "http") && !strings.HasPrefix(driverhubHost, "https") {
 		driverhubHost = fmt.Sprintf("http://%s", driverhubHost)
 	}
@@ -439,5 +458,6 @@ func NewObjectController(driverhubHost string, driverKey string) ObjectControlle
 		driverhub_host: driverhubHost,
 		driver_key:     driverKey,
 		httpClient:     resty.New(),
+		token:          fileData.Token,
 	}
 }

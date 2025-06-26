@@ -69,7 +69,7 @@ type defaultDataResponse struct {
 // This function, upon receiving a configuration, will look in the map of handlers
 // to see if there is a handler for that configuration. If there is no handler, it will return an error.
 // More information here https://.../docs
-func ListenConfig(host string, driverKey string, siteId string, setVideoEngineID func(string)) error {
+func ListenConfig(host string, driverKey string, siteId string, token string, driverID string, setVideoEngineID func(string)) error {
 	go func() {
 		for message := range messages {
 			handler := handlersMap[message.ConfigKey]
@@ -144,7 +144,7 @@ func ListenConfig(host string, driverKey string, siteId string, setVideoEngineID
 	} else if strings.HasPrefix(host, "http://") {
 		host = strings.TrimPrefix(host, "http://")
 	}
-	u, err := url.Parse(fmt.Sprintf("%s://%s/ws/v1/config_communication?site_id=%s", protocol, host, siteId))
+	u, err := url.Parse(fmt.Sprintf("%s://%s/ws/v1/config_communication?site_id=%s&driver_id=%s", protocol, host, siteId, driverID))
 	if err != nil {
 		return err
 	}
@@ -153,6 +153,7 @@ func ListenConfig(host string, driverKey string, siteId string, setVideoEngineID
 
 	c, _, err := websocket.DefaultDialer.Dial(u.String(), http.Header{
 		"Authorization": []string{driverKey},
+		"X-Auth-Token":  []string{token},
 	})
 	if err != nil {
 		log.Fatal("dial:", err)
