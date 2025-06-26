@@ -9,8 +9,8 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
-	"strings"
 
+	"github.com/Netsocs-Team/driver.sdk_go/pkg/tools"
 	"github.com/gorilla/websocket"
 )
 
@@ -134,20 +134,9 @@ func ListenConfig(host string, driverKey string, siteId string, token string, dr
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
 
-	// Start with the original host
-	wsURL := host
-
-	// Convert HTTP/HTTPS to WebSocket protocol
-	wsURL = strings.ReplaceAll(wsURL, "https://", "wss://")
-	wsURL = strings.ReplaceAll(wsURL, "http://", "ws://")
-
-	// If the URL doesn't have a protocol, assume it's HTTP and convert to WS
-	if !strings.HasPrefix(wsURL, "ws://") && !strings.HasPrefix(wsURL, "wss://") {
-		wsURL = fmt.Sprintf("ws://%s", wsURL)
-	}
-
-	// Add the WebSocket path and query parameters
-	wsURL = fmt.Sprintf("%s/ws/v1/config_communication?site_id=%s&driver_id=%s", wsURL, siteId, driverID)
+	// Convert the URL using the utility function with query parameters
+	path := fmt.Sprintf("ws/v1/config_communication?site_id=%s&driver_id=%s", siteId, driverID)
+	wsURL := tools.ConvertToWebSocketURL(host, path)
 
 	u, err := url.Parse(wsURL)
 	if err != nil {

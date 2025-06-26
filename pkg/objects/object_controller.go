@@ -326,25 +326,8 @@ type wsMessage struct {
 func (o *objectController) ListenActionRequests() error {
 	_logger := logger.Logger()
 
-	// Start with the driverhub host
-	url := o.driverhub_host
-
-	// Convert HTTP/HTTPS to WebSocket protocol
-	url = strings.ReplaceAll(url, "https://", "wss://")
-	url = strings.ReplaceAll(url, "http://", "ws://")
-
-	// If the URL doesn't have a protocol, assume it's HTTP and convert to WS
-	if !strings.HasPrefix(url, "ws://") && !strings.HasPrefix(url, "wss://") {
-		url = fmt.Sprintf("ws://%s", url)
-	}
-
-	// Check if the URL already contains a path that looks like a WebSocket endpoint
-	// If it doesn't end with /objects/ws, append it
-	if !strings.HasSuffix(url, "/objects/ws") && !strings.Contains(url, "/ws/") {
-		// Remove trailing slash if present to avoid double slashes
-		url = strings.TrimSuffix(url, "/")
-		url = fmt.Sprintf("%s/objects/ws", url)
-	}
+	// Convert the URL using the utility function
+	url := tools.ConvertToWebSocketURL(o.driverhub_host, "objects/ws")
 
 	// Create a custom dialer that accepts self-signed certificates
 	dialer := websocket.Dialer{
