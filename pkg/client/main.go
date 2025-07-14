@@ -20,6 +20,8 @@ type NetsocsDriverClient struct {
 	objectsRunner objects.ObjectRunner
 	siteID        string
 	videoEngineID string
+	token         string
+	driverID      string
 }
 
 func (n *NetsocsDriverClient) SetVideoEngineID(videoEngineID string) {
@@ -28,6 +30,22 @@ func (n *NetsocsDriverClient) SetVideoEngineID(videoEngineID string) {
 
 func (n *NetsocsDriverClient) SetSiteID(siteID string) {
 	n.siteID = siteID
+}
+
+func (n *NetsocsDriverClient) SetToken(token string) {
+	n.token = token
+}
+
+func (n *NetsocsDriverClient) SetDriverID(driverID string) {
+	n.driverID = driverID
+}
+
+func (n *NetsocsDriverClient) GetToken() string {
+	return n.token
+}
+
+func (n *NetsocsDriverClient) GetDriverID() string {
+	return n.driverID
 }
 
 func (n *NetsocsDriverClient) GetSiteID() string {
@@ -67,7 +85,7 @@ func NewNetsocsDriverClient(driverKey string, driverHubHost string, isSSL bool) 
 
 func New() (*NetsocsDriverClient, error) {
 
-	fileData, err := getDriverNetsocsDotJsonContent("driver.netsocs.json")
+	fileData, err := tools.GetDriverNetsocsDotJsonContent("driver.netsocs.json")
 	if err != nil {
 		return nil, err
 	}
@@ -76,6 +94,8 @@ func New() (*NetsocsDriverClient, error) {
 	client.DriverName = fileData.Name
 
 	client.SetSiteID(fileData.SiteID)
+	client.SetToken(fileData.Token)
+	client.SetDriverID(fileData.DriverID)
 
 	return client, nil
 }
@@ -87,6 +107,8 @@ func (d *NetsocsDriverClient) GetChildren(parentId int) ([]Device, error) {
 		return nil, err
 	}
 	req.Header.Set("Authorization", d.driverKey)
+	req.Header.Set("X-Auth-Token", d.token)
+
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
@@ -112,7 +134,7 @@ func (d *NetsocsDriverClient) UploadFileAndGetURL(file *os.File) (string, error)
 
 func (d *NetsocsDriverClient) ListenConfig() error {
 
-	return config.ListenConfig(d.driverHubHost, d.driverKey, d.siteID, func(videoEngineID string) {
+	return config.ListenConfig(d.driverHubHost, d.driverKey, d.siteID, d.token, d.driverID, func(videoEngineID string) {
 		d.SetVideoEngineID(videoEngineID)
 	})
 }
@@ -153,7 +175,7 @@ func (c *NetsocsDriverClient) DispatchEvent(domain string, eventKey string, even
 		req.Rels = append(req.Rels, fmt.Sprintf("/objects/%s", objID))
 	}
 
-	resp, err := resty.New().R().SetBody(req).Post(c.driverHubHost + "/objects/events")
+	resp, err := resty.New().R().SetHeader("X-Auth-Token", c.token).SetBody(req).Post(c.driverHubHost + "/objects/events")
 
 	if err != nil {
 		return "", err
