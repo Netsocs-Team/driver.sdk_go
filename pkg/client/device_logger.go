@@ -10,9 +10,9 @@ import (
 func (d *NetsocsDriverClient) WriteLog(deviceId int, log string, params ...string) (*http.Response, error) {
 	url := ""
 	if d.isSSL {
-		url = fmt.Sprintf("https://%s/devices/audit-logs", d.driverHubHost)
+		url = fmt.Sprintf("%s/devices/audit-logs", d.driverHubHost)
 	} else {
-		url = fmt.Sprintf("http://%s/devices/audit-logs", d.driverHubHost)
+		url = fmt.Sprintf("%s/devices/audit-logs", d.driverHubHost)
 	}
 	action := "NULL"
 	if len(params) > 0 {
