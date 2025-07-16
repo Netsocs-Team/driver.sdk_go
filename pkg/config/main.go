@@ -42,6 +42,7 @@ type ConfigMessageDeviceData struct {
 	Username         string                 `json:"username"`
 	Password         string                 `json:"password"`
 	IP               string                 `json:"ip_address_public"`
+	Name             string                 `json:"device_name"`
 	Port             int                    `json:"port"`
 	IsSSL            bool                   `json:"is_ssl"`
 	SSLPort          int                    `json:"ssl_port"`
