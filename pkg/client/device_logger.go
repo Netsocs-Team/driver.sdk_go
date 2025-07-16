@@ -3,6 +3,7 @@ package client
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/go-resty/resty/v2"
 )
@@ -23,7 +24,7 @@ func (d *NetsocsDriverClient) WriteLog(deviceId int, log string, params ...strin
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Authorization", fmt.Sprintf("Bearer %s", d.token)).
 		SetBody(map[string]interface{}{
-			"device_id": deviceId,
+			"device_id": strconv.Itoa(deviceId),
 			"message":   log,
 			"action":    action,
 		}).
