@@ -185,7 +185,7 @@ func ListenConfig(host string, driverKey string, siteId string, token string, dr
 					VideoEngine string `json:"video_engine"`
 				}
 				var msgData msg
-				err = json.Unmarshal(message, &msgData)
+				err = json.Unmarshal([]byte(configMessage.Value), &msgData)
 				if err != nil {
 					log.Println("unmarshal msgData:", err)
 				} else {
