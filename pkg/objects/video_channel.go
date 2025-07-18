@@ -56,6 +56,10 @@ type SeekPayload struct {
 	Speed      float32 `json:"speed"`       //speed to play the video, 1.0 is normal speed, 2.0 is double speed, 0.5 is half speed
 	Reverse    bool    `json:"reverse"`     //if true, play the video in reverse
 	Destroy    bool    `json:"destroy"`     //if true, destroy the playback after seeking
+	// video_engine_hostname
+	VideoEngineHostname string `json:"video_engine_hostname"`
+	// video_engine_rtsp_port
+	VideoEngineRtspPort string `json:"video_engine_rtsp_port"`
 }
 
 type videoChannelObject struct {
