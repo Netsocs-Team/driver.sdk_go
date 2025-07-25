@@ -129,7 +129,7 @@ func (d *NetsocsDriverClient) GetChildren(parentId int) ([]Device, error) {
 }
 
 func (d *NetsocsDriverClient) UploadFileAndGetURL(file *os.File) (string, error) {
-	return tools.UploadFileAndGetURL(d.driverHubHost, d.driverKey, file)
+	return tools.UploadFileAndGetURLWithReset(d.driverHubHost, d.driverKey, file)
 }
 
 func (d *NetsocsDriverClient) ListenConfig() error {
