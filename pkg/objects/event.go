@@ -28,6 +28,10 @@ type EventRecord struct {
 	Domain                    string            `json:"domain"`
 }
 
+type EventDispatchResponse struct {
+	ID string `json:"id"`
+}
+
 type ReportRecord struct {
 	WrittenBy string `json:"written_by"`
 	WrittenAt string `json:"written_at"`
