@@ -200,37 +200,37 @@ func (c *NetsocsDriverClient) GetEvent(eventId string) (objects.EventRecord, err
 	return event, nil
 }
 
-func (c *NetsocsDriverClient) PatchEvent(eventId string, event objects.Event) error {
+func (c *NetsocsDriverClient) PatchEvent(eventId string, event objects.EventRecord) error {
 
 	currentEvent, err := c.GetEvent(eventId)
 	if err != nil {
 		return err
 	}
 
-	if event.ImageURLs != nil {
-		if len(event.ImageURLs) > 0 {
-			currentEvent.Images = append(currentEvent.Images, event.ImageURLs...)
+	if event.Images != nil {
+		if len(event.Images) > 0 {
+			currentEvent.Images = append(currentEvent.Images, event.Images...)
 		} else {
-			currentEvent.Images = event.ImageURLs
+			currentEvent.Images = event.Images
 		}
 	}
 
-	if event.VideoURLs != nil {
-		if len(event.VideoURLs) > 0 {
+	if event.VideoClips != nil {
+		if len(event.VideoClips) > 0 {
 
-			currentEvent.VideoClips = append(currentEvent.VideoClips, event.VideoURLs...)
+			currentEvent.VideoClips = append(currentEvent.VideoClips, event.VideoClips...)
 		} else {
-			currentEvent.VideoClips = event.VideoURLs
+			currentEvent.VideoClips = event.VideoClips
 		}
 	}
 
-	if event.Properties != nil {
-		if len(event.Properties) > 0 {
-			for key, value := range event.Properties {
+	if event.EventAdditionalProperties != nil {
+		if len(event.EventAdditionalProperties) > 0 {
+			for key, value := range event.EventAdditionalProperties {
 				currentEvent.EventAdditionalProperties[key] = value
 			}
 		} else {
-			currentEvent.EventAdditionalProperties = event.Properties
+			currentEvent.EventAdditionalProperties = event.EventAdditionalProperties
 		}
 	}
 
