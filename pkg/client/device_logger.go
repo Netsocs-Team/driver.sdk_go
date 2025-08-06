@@ -23,6 +23,7 @@ func (d *NetsocsDriverClient) WriteLog(deviceId int, log string, params ...strin
 	resp, err := resty.New().R().
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Authorization", fmt.Sprintf("Bearer %s", d.token)).
+		SetHeader("X-Auth-Token", d.token).
 		SetBody(map[string]interface{}{
 			"device_id": strconv.Itoa(deviceId),
 			"message":   log,

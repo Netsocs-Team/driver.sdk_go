@@ -2,6 +2,7 @@ package client
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -182,4 +183,65 @@ func (c *NetsocsDriverClient) DispatchEvent(domain string, eventKey string, even
 	}
 	return resp.String(), nil
 
+}
+
+func (c *NetsocsDriverClient) GetEvent(eventId string) (objects.EventRecord, error) {
+
+	resp, err := resty.New().R().SetHeader("X-Auth-Token", c.token).Get(c.driverHubHost + "/objects/events/" + eventId)
+	if err != nil {
+		return objects.EventRecord{}, err
+	}
+
+	var event objects.EventRecord
+	if err := json.Unmarshal(resp.Body(), &event); err != nil {
+		return objects.EventRecord{}, err
+	}
+
+	return event, nil
+}
+
+func (c *NetsocsDriverClient) PatchEvent(eventId string, event objects.Event) error {
+
+	currentEvent, err := c.GetEvent(eventId)
+	if err != nil {
+		return err
+	}
+
+	if event.ImageURLs != nil {
+		if len(event.ImageURLs) > 0 {
+			currentEvent.Images = append(currentEvent.Images, event.ImageURLs...)
+		} else {
+			currentEvent.Images = event.ImageURLs
+		}
+	}
+
+	if event.VideoURLs != nil {
+		if len(event.VideoURLs) > 0 {
+
+			currentEvent.VideoClips = append(currentEvent.VideoClips, event.VideoURLs...)
+		} else {
+			currentEvent.VideoClips = event.VideoURLs
+		}
+	}
+
+	if event.Properties != nil {
+		if len(event.Properties) > 0 {
+			for key, value := range event.Properties {
+				currentEvent.EventAdditionalProperties[key] = value
+			}
+		} else {
+			currentEvent.EventAdditionalProperties = event.Properties
+		}
+	}
+
+	resp, err := resty.New().R().SetHeader("X-Auth-Token", c.token).SetBody(currentEvent).Put(c.driverHubHost + "/objects/events/" + eventId)
+	if err != nil {
+		return err
+	}
+
+	if resp.IsError() {
+		return errors.New(resp.String())
+	}
+
+	return nil
 }
