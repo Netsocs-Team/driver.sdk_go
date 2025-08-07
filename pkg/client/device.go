@@ -8,6 +8,17 @@ import (
 	"github.com/go-resty/resty/v2"
 )
 
+type DeviceState string
+
+const (
+	DeviceStateOnline                DeviceState = "Online"
+	DeviceStateOffline               DeviceState = "Offline"
+	DeviceStateConfigurationFailure  DeviceState = "ConfigurationFailure"
+	DeviceStateAuthenticationFailure DeviceState = "AuthenticationFailure"
+	DeviceStateDuplicatedDevice      DeviceState = "DuplicatedDevice"
+	DeviceStateUnknown               DeviceState = "Unknown"
+)
+
 type Device struct {
 	Username        string                 `json:"username"`
 	Password        string                 `json:"password"`
@@ -23,43 +34,43 @@ type Device struct {
 	Params          map[string]interface{} `json:"params"`
 }
 
-type DeviceState struct {
-	Id            int    `json:"id"`
-	DeviceID      int    `json:"device_id"`
-	State         string `json:"state"`
-	Datetime      string `json:"datetime"`
-	PreviousState string `json:"prev_state"`
+type DeviceStateResponse struct {
+	Id            int         `json:"id"`
+	DeviceID      int         `json:"device_id"`
+	State         DeviceState `json:"state"`
+	Datetime      string      `json:"datetime"`
+	PreviousState string      `json:"prev_state"`
 }
 
-func (d *NetsocsDriverClient) GetDeviceState(deviceId int) (DeviceState, error) {
+func (d *NetsocsDriverClient) GetDeviceState(deviceId int) (DeviceStateResponse, error) {
 	resp, err := resty.New().R().SetHeader("X-Auth-Token", d.token).Get(d.driverHubHost + "/devices/" + strconv.Itoa(deviceId) + "/state")
 	if err != nil {
-		return DeviceState{}, err
+		return DeviceStateResponse{}, err
 	}
 
-	var deviceState []DeviceState
+	var deviceState []DeviceStateResponse
 	if err := json.Unmarshal(resp.Body(), &deviceState); err != nil {
-		return DeviceState{}, err
+		return DeviceStateResponse{}, err
 	}
 
 	if len(deviceState) == 0 {
-		return DeviceState{}, errors.New("no device state found")
+		return DeviceStateResponse{}, errors.New("no device state found")
 	}
 
 	return deviceState[0], nil
 }
 
-func (d *NetsocsDriverClient) SetDeviceState(deviceId int, state string) (DeviceState, error) {
+func (d *NetsocsDriverClient) SetDeviceState(deviceId int, state DeviceState) (DeviceStateResponse, error) {
 	resp, err := resty.New().R().SetHeader("X-Auth-Token", d.token).SetBody(map[string]interface{}{
 		"state": state,
 	}).Post(d.driverHubHost + "/devices/" + strconv.Itoa(deviceId) + "/state")
 	if err != nil {
-		return DeviceState{}, err
+		return DeviceStateResponse{}, err
 	}
 
 	if resp.IsError() {
-		return DeviceState{}, errors.New(resp.String())
+		return DeviceStateResponse{}, errors.New(resp.String())
 	}
 
-	return DeviceState{}, nil
+	return DeviceStateResponse{}, nil
 }
