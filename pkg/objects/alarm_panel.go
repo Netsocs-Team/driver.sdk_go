@@ -24,6 +24,7 @@ const ALARM_PANEL_ACTION_FIRE = "alarm_panel.action.fire"
 const ALARM_PANEL_ACTION_PANIC = "alarm_panel.action.panic"
 const ALARM_PANEL_ACTION_AUXILIARY = "alarm_panel.action.auxiliary"
 const ALARM_PANEL_BYPASS = "alarm_panel.bypass"
+const ALARM_PANEL_ACTION_RESTORE_ALARM = "alarm.restore_alarm"
 
 type AlarmPanelObject interface {
 	RegistrableObject
