@@ -34,7 +34,7 @@ type Device struct {
 	Params          map[string]interface{} `json:"params"`
 }
 
-type DeviceStateResponse struct {
+type DeviceStateItem struct {
 	Id            int         `json:"id"`
 	DeviceID      int         `json:"device_id"`
 	State         DeviceState `json:"state"`
@@ -42,28 +42,33 @@ type DeviceStateResponse struct {
 	PreviousState string      `json:"prev_state"`
 }
 
-func (d *NetsocsDriverClient) GetDeviceState(deviceId int) (DeviceStateResponse, error) {
-	resp, err := resty.New().R().SetHeader("X-Auth-Token", d.token).Get(d.driverHubHost + "/devices/" +  "states/" + strconv.Itoa(deviceId) )
+type DeviceStateResponse struct {
+	Items []DeviceStateItem `json:"items"`
+	// Metadata Metadata `json:"_metadata"`
+}
+
+func (d *NetsocsDriverClient) GetDeviceState(deviceId int) (DeviceStateItem, error) {
+	resp, err := resty.New().R().SetHeader("X-Auth-Token", d.token).Get(d.driverHubHost + "/devices/" + "states/" + strconv.Itoa(deviceId))
 	if err != nil {
-		return DeviceStateResponse{}, err
+		return DeviceStateItem{}, err
 	}
 
-	var deviceState []DeviceStateResponse
+	var deviceState DeviceStateResponse
 	if err := json.Unmarshal(resp.Body(), &deviceState); err != nil {
-		return DeviceStateResponse{}, err
+		return DeviceStateItem{}, err
 	}
 
-	if len(deviceState) == 0 {
-		return DeviceStateResponse{}, errors.New("no device state found")
+	if len(deviceState.Items) == 0 {
+		return DeviceStateItem{}, errors.New("no device state found")
 	}
 
-	return deviceState[0], nil
+	return deviceState.Items[0], nil
 }
 
 func (d *NetsocsDriverClient) SetDeviceState(deviceId int, state DeviceState) (DeviceStateResponse, error) {
 	resp, err := resty.New().R().SetHeader("X-Auth-Token", d.token).SetBody(map[string]interface{}{
 		"state": state,
-	}).Put(d.driverHubHost + "/devices/" +  "states/" + strconv.Itoa(deviceId))
+	}).Put(d.driverHubHost + "/devices/" + "states/" + strconv.Itoa(deviceId))
 	if err != nil {
 		return DeviceStateResponse{}, err
 	}
