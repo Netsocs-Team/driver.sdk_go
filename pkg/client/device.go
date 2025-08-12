@@ -35,16 +35,21 @@ type Device struct {
 }
 
 type DeviceStateItem struct {
-	Id            int         `json:"id"`
-	DeviceID      int         `json:"device_id"`
-	State         DeviceState `json:"state"`
-	Datetime      string      `json:"datetime"`
-	PreviousState string      `json:"prev_state"`
+	Id       string      `json:"id"`
+	DeviceID int         `json:"device_id"`
+	State    DeviceState `json:"state"`
+	Datetime string      `json:"datetime"`
 }
 
 type DeviceStateResponse struct {
-	Items []DeviceStateItem `json:"items"`
-	// Metadata Metadata `json:"_metadata"`
+	Items    []DeviceStateItem `json:"items"`
+	Metadata Metadata          `json:"_metadata"`
+}
+
+type Metadata struct {
+	Total  int `json:"total_items"`
+	Limit  int `json:"limit"`
+	Offset int `json:"offset"`
 }
 
 func (d *NetsocsDriverClient) GetDeviceState(deviceId int) (DeviceStateItem, error) {
