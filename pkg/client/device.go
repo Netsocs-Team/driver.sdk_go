@@ -43,7 +43,7 @@ type DeviceStateResponse struct {
 }
 
 func (d *NetsocsDriverClient) GetDeviceState(deviceId int) (DeviceStateResponse, error) {
-	resp, err := resty.New().R().SetHeader("X-Auth-Token", d.token).Get(d.driverHubHost + "/devices/" + strconv.Itoa(deviceId) + "/state")
+	resp, err := resty.New().R().SetHeader("X-Auth-Token", d.token).Get(d.driverHubHost + "/devices/" +  "states/" + strconv.Itoa(deviceId) )
 	if err != nil {
 		return DeviceStateResponse{}, err
 	}
@@ -63,7 +63,7 @@ func (d *NetsocsDriverClient) GetDeviceState(deviceId int) (DeviceStateResponse,
 func (d *NetsocsDriverClient) SetDeviceState(deviceId int, state DeviceState) (DeviceStateResponse, error) {
 	resp, err := resty.New().R().SetHeader("X-Auth-Token", d.token).SetBody(map[string]interface{}{
 		"state": state,
-	}).Post(d.driverHubHost + "/devices/" + strconv.Itoa(deviceId) + "/state")
+	}).Put(d.driverHubHost + "/devices/" +  "states/" + strconv.Itoa(deviceId))
 	if err != nil {
 		return DeviceStateResponse{}, err
 	}
