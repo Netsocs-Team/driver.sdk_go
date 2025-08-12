@@ -27,6 +27,7 @@ const ALARM_PANEL_ACTION_AUXILIARY = "alarm_panel.action.auxiliary"
 
 // generic (partion and zones) actions
 const ALARM_GENERIC_ACTION_BYPASS = "alarm.action.bypass"
+const ALARM_GENERIC_ACTION_BYPASS_REST = "alarm.action.bypass_rest"
 const ALARM_GENERIC_ACTION_RESTORE_ALARM = "alarm.action.restore_alarm"
 
 type AlarmPanelObject interface {
@@ -47,11 +48,12 @@ type alarmPanelObject struct {
 	armFn    func(alarmPanelObject AlarmPanelObject, oc ObjectController, mode string, key string) error
 	disarmFn func(alarmPanelObject AlarmPanelObject, oc ObjectController, key string) error
 
-	fireFn      func(alarmPanelObject AlarmPanelObject, oc ObjectController, key string) error
-	panicFn     func(alarmPanelObject AlarmPanelObject, oc ObjectController, key string) error
-	auxiliaryFn func(alarmPanelObject AlarmPanelObject, oc ObjectController, key string) error
-	bypassFn    func(alarmPanelObject AlarmPanelObject, oc ObjectController, key string, zoneId string) error
-	setupFn     func(alarmPanelObject AlarmPanelObject, oc ObjectController) error
+	fireFn       func(alarmPanelObject AlarmPanelObject, oc ObjectController, key string) error
+	panicFn      func(alarmPanelObject AlarmPanelObject, oc ObjectController, key string) error
+	auxiliaryFn  func(alarmPanelObject AlarmPanelObject, oc ObjectController, key string) error
+	bypassFn     func(alarmPanelObject AlarmPanelObject, oc ObjectController, key string, zoneId string) error
+	bypassRestFn func(alarmPanelObject AlarmPanelObject, oc ObjectController, key string, zoneId string) error
+	setupFn      func(alarmPanelObject AlarmPanelObject, oc ObjectController) error
 }
 
 // UpdateStateAttributes implements AlarmPanelObject.
@@ -135,6 +137,8 @@ func (a *alarmPanelObject) RunAction(id, action string, payload []byte) (map[str
 		return nil, a.auxiliaryFn(a, a.controller, p.Code)
 	case ALARM_GENERIC_ACTION_BYPASS:
 		return nil, a.bypassFn(a, a.controller, p.Code, p.Zone)
+	case ALARM_GENERIC_ACTION_BYPASS_REST:
+		return nil, a.bypassRestFn(a, a.controller, p.Code, p.Zone)
 	}
 	return nil, fmt.Errorf("action %s not found", action)
 }
