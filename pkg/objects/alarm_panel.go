@@ -9,6 +9,7 @@ import (
 
 const ALARM_PANEL_STATE_UNKNOWN = "alarm_panel.state.unknown"
 const ALARM_PANEL_STATE_DISARMED = "alarm_panel.state.disarmed"
+const ALARM_PANEL_STATE_ARMED = "alarm_panel.state.armed"
 const ALARM_PANEL_STATE_STAY_ARMED = "alarm_panel.state.stay_armed"
 const ALARM_PANEL_STATE_AWAY_ARMED = "alarm_panel.state.away_armed"
 const ALARM_PANEL_STATE_STAY_ARMED_WITH_NO_ENTRY_DELAY = "alarm_panel.state.stay_armed_with_no_entry_delay"
@@ -23,8 +24,10 @@ const ALARM_PANEL_ACTION_DISARM = "alarm_panel.action.disarm"
 const ALARM_PANEL_ACTION_FIRE = "alarm_panel.action.fire"
 const ALARM_PANEL_ACTION_PANIC = "alarm_panel.action.panic"
 const ALARM_PANEL_ACTION_AUXILIARY = "alarm_panel.action.auxiliary"
-const ALARM_PANEL_BYPASS = "alarm_panel.bypass"
-const ALARM_PANEL_ACTION_RESTORE_ALARM = "alarm.restore_alarm"
+
+// generic (partion and zones) actions
+const ALARM_GENERIC_ACTION_BYPASS = "alarm.action.bypass"
+const ALARM_GENERIC_ACTION_RESTORE_ALARM = "alarm.action.restore_alarm"
 
 type AlarmPanelObject interface {
 	RegistrableObject
@@ -95,7 +98,7 @@ func (a *alarmPanelObject) GetAvailableStates() []string {
 		ALARM_PANEL_STATE_INTERIOR_ARMED,
 		ALARM_PANEL_STATE_USER_ARMED,
 		ALARM_PANEL_STATE_ERROR,
-		ALARM_PANEL_BYPASS,
+		ALARM_PANEL_STATE_ARMED,
 	}
 }
 
@@ -130,7 +133,7 @@ func (a *alarmPanelObject) RunAction(id, action string, payload []byte) (map[str
 		return nil, a.panicFn(a, a.controller, p.Code)
 	case ALARM_PANEL_ACTION_AUXILIARY:
 		return nil, a.auxiliaryFn(a, a.controller, p.Code)
-	case ALARM_PANEL_BYPASS:
+	case ALARM_GENERIC_ACTION_BYPASS:
 		return nil, a.bypassFn(a, a.controller, p.Code, p.Zone)
 	}
 	return nil, fmt.Errorf("action %s not found", action)
