@@ -44,8 +44,9 @@ type alarmPanelObject struct {
 	controller ObjectController
 	metadata   ObjectMetadata
 
-	armFn    func(alarmPanelObject AlarmPanelObject, oc ObjectController, mode string, key string) error
-	disarmFn func(alarmPanelObject AlarmPanelObject, oc ObjectController, key string) error
+	armFn          func(alarmPanelObject AlarmPanelObject, oc ObjectController, mode string, key string) error
+	disarmFn       func(alarmPanelObject AlarmPanelObject, oc ObjectController, key string) error
+	restoreAlarmFn func(alarmPanelObject AlarmPanelObject, oc ObjectController, key string) error
 
 	fireFn      func(alarmPanelObject AlarmPanelObject, oc ObjectController, key string) error
 	panicFn     func(alarmPanelObject AlarmPanelObject, oc ObjectController, key string) error
@@ -135,6 +136,8 @@ func (a *alarmPanelObject) RunAction(id, action string, payload []byte) (map[str
 		return nil, a.auxiliaryFn(a, a.controller, p.Code)
 	case ALARM_GENERIC_ACTION_BYPASS:
 		return nil, a.bypassFn(a, a.controller, p.Code, p.Zone)
+	case ALARM_GENERIC_ACTION_RESTORE_ALARM:
+		return nil, a.restoreAlarmFn(a, a.controller, p.Code)
 	}
 	return nil, fmt.Errorf("action %s not found", action)
 }
@@ -155,9 +158,10 @@ type NewAlarmPanelObjectProps struct {
 
 	Metadata ObjectMetadata
 
-	SetupFn  func(alarmPanelObject AlarmPanelObject, oc ObjectController) error
-	ArmFn    func(alarmPanelObject AlarmPanelObject, oc ObjectController, mode string, key string) error
-	DisarmFn func(alarmPanelObject AlarmPanelObject, oc ObjectController, key string) error
+	SetupFn        func(alarmPanelObject AlarmPanelObject, oc ObjectController) error
+	ArmFn          func(alarmPanelObject AlarmPanelObject, oc ObjectController, mode string, key string) error
+	DisarmFn       func(alarmPanelObject AlarmPanelObject, oc ObjectController, key string) error
+	RestoreAlarmFn func(alarmPanelObject AlarmPanelObject, oc ObjectController, key string) error
 
 	FireFn      func(alarmPanelObject AlarmPanelObject, oc ObjectController, key string) error
 	PanicFn     func(alarmPanelObject AlarmPanelObject, oc ObjectController, key string) error
@@ -166,12 +170,13 @@ type NewAlarmPanelObjectProps struct {
 
 func NewAlarmPanelObject(props NewAlarmPanelObjectProps) AlarmPanelObject {
 	return &alarmPanelObject{
-		metadata:    props.Metadata,
-		setupFn:     props.SetupFn,
-		armFn:       props.ArmFn,
-		disarmFn:    props.DisarmFn,
-		fireFn:      props.FireFn,
-		panicFn:     props.PanicFn,
-		auxiliaryFn: props.AuxiliaryFn,
+		metadata:       props.Metadata,
+		setupFn:        props.SetupFn,
+		armFn:          props.ArmFn,
+		disarmFn:       props.DisarmFn,
+		restoreAlarmFn: props.RestoreAlarmFn,
+		fireFn:         props.FireFn,
+		panicFn:        props.PanicFn,
+		auxiliaryFn:    props.AuxiliaryFn,
 	}
 }
