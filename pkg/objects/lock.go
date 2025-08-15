@@ -13,8 +13,6 @@ const LOCK_STATE_UNKNOWN = "unknown"
 
 const LOCK_ACTION_LOCK = "lock"
 const LOCK_ACTION_UNLOCK = "unlock"
-const LOCK_ACTION_JAM = "jam"
-const LOCK_ACTION_OPEN = "open"
 
 type LockObject interface {
 	RegistrableObject
@@ -24,8 +22,6 @@ type lockObject struct {
 	metadata     ObjectMetadata
 	lockMethod   func(this LockObject, controller ObjectController) (map[string]string, error)
 	unlockMethod func(this LockObject, controller ObjectController) (map[string]string, error)
-	jamMethod    func(this LockObject, controller ObjectController) (map[string]string, error)
-	openMethod   func(this LockObject, controller ObjectController) (map[string]string, error)
 	setup        func(this LockObject, controller ObjectController) error
 	controller   ObjectController
 }
@@ -39,14 +35,6 @@ func (d *lockObject) GetAvailableActions() []ObjectAction {
 		},
 		{
 			Action: LOCK_ACTION_UNLOCK,
-			Domain: d.metadata.Domain,
-		},
-		{
-			Action: LOCK_ACTION_JAM,
-			Domain: d.metadata.Domain,
-		},
-		{
-			Action: LOCK_ACTION_OPEN,
 			Domain: d.metadata.Domain,
 		},
 	}
@@ -85,16 +73,6 @@ func (d *lockObject) RunAction(id string, action string, payload []byte) (map[st
 			return nil, errors.New("unlock method is not set")
 		}
 		return d.unlockMethod(d, d.controller)
-	case LOCK_ACTION_JAM:
-		if d.jamMethod == nil {
-			return nil, errors.New("jam method is not set")
-		}
-		return d.jamMethod(d, d.controller)
-	case LOCK_ACTION_OPEN:
-		if d.openMethod == nil {
-			return nil, errors.New("open method is not set")
-		}
-		return d.openMethod(d, d.controller)
 	}
 	return nil, nil
 }
@@ -122,8 +100,6 @@ type NewLockObjectParams struct {
 	Metadata     ObjectMetadata
 	LockMethod   func(this LockObject, controller ObjectController) (map[string]string, error)
 	UnlockMethod func(this LockObject, controller ObjectController) (map[string]string, error)
-	JamMethod    func(this LockObject, controller ObjectController) (map[string]string, error)
-	OpenMethod   func(this LockObject, controller ObjectController) (map[string]string, error)
 	Setup        func(this LockObject, controller ObjectController) error
 }
 
@@ -132,8 +108,6 @@ func NewLockObject(params NewLockObjectParams) LockObject {
 		metadata:     params.Metadata,
 		lockMethod:   params.LockMethod,
 		unlockMethod: params.UnlockMethod,
-		jamMethod:    params.JamMethod,
-		openMethod:   params.OpenMethod,
 		setup:        params.Setup,
 	}
 }
