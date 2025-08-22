@@ -2,6 +2,7 @@ package config
 
 import (
 	"crypto/tls"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -71,7 +72,7 @@ type defaultDataResponse struct {
 // This function, upon receiving a configuration, will look in the map of handlers
 // to see if there is a handler for that configuration. If there is no handler, it will return an error.
 // More information here https://.../docs
-func ListenConfig(host string, driverKey string, siteId string, token string, driverID string, setVideoEngineID func(string)) error {
+func ListenConfig(host string, driverKey string, siteId string, token string, driverID string, setVideoEngineID func(string), driverVersion string, driverDocumentation string) error {
 	go func() {
 		for message := range messages {
 			handler := handlersMap[message.ConfigKey]
@@ -136,7 +137,11 @@ func ListenConfig(host string, driverKey string, siteId string, token string, dr
 	signal.Notify(interrupt, os.Interrupt)
 
 	// Convert the URL using the utility function with query parameters
-	path := fmt.Sprintf("ws/v1/config_communication?site_id=%s&driver_id=%s", siteId, driverID)
+	documentationInBase64 := ""
+	if driverDocumentation != "" {
+		documentationInBase64 = base64.StdEncoding.EncodeToString([]byte(driverDocumentation))
+	}
+	path := fmt.Sprintf("ws/v1/config_communication?site_id=%s&driver_id=%s&driver_version=%s&driver_documentation=%s", siteId, driverID, driverVersion, documentationInBase64)
 	wsURL := tools.ConvertToWebSocketURL(host, path)
 
 	u, err := url.Parse(wsURL)
