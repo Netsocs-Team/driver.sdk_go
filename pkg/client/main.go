@@ -14,15 +14,17 @@ import (
 )
 
 type NetsocsDriverClient struct {
-	driverKey     string
-	driverHubHost string
-	isSSL         bool
-	DriverName    string
-	objectsRunner objects.ObjectRunner
-	siteID        string
-	videoEngineID string
-	token         string
-	driverID      string
+	driverKey           string
+	driverHubHost       string
+	isSSL               bool
+	DriverName          string
+	objectsRunner       objects.ObjectRunner
+	siteID              string
+	videoEngineID       string
+	token               string
+	driverID            string
+	driverVersion       string
+	driverDocumentation string
 }
 
 func (n *NetsocsDriverClient) SetVideoEngineID(videoEngineID string) {
@@ -137,7 +139,15 @@ func (d *NetsocsDriverClient) ListenConfig() error {
 
 	return config.ListenConfig(d.driverHubHost, d.driverKey, d.siteID, d.token, d.driverID, func(videoEngineID string) {
 		d.SetVideoEngineID(videoEngineID)
-	})
+	}, d.driverVersion, d.driverDocumentation)
+}
+
+func (d *NetsocsDriverClient) SetDriverVersion(version string) {
+	d.driverVersion = version
+}
+
+func (d *NetsocsDriverClient) SetDriverDocumentation(documentation string) {
+	d.driverDocumentation = documentation
 }
 
 func (d *NetsocsDriverClient) AddConfigHandler(configKey config.NetsocsConfigKey, configHandler config.FuncConfigHandler) error {

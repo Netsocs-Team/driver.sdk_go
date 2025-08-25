@@ -17,6 +17,13 @@ const VIDEO_CHANNEL_ACTION_VIDEOCLIP = "video_channel.action.videoclip"
 const VIDEO_CHANNEL_ACTION_PTZ_CONTROL = "video_channel.action.ptz_control"
 const VIDEO_CHANNEL_ACTION_SEEK = "video_channel.action.seek" //seek to a specific timestamp to playback id
 
+// seek states
+const VIDEO_CHANNEL_SEEK_STATE_MEDIA_NOT_FOUND = "media_not_found"
+const VIDEO_CHANNEL_SEEK_STATE_BAD_STATUS_CODE = "bad_status_code"
+const VIDEO_CHANNEL_SEEK_STATE_PLAYING = "playing"
+const VIDEO_CHANNEL_SEEK_STATE_SEEKING = "seeking"
+const VIDEO_CHANNEL_SEEK_STATE_VIDEO_ENGINE_NOT_AVAILABLE = "video_engine_not_available"
+
 type VideoChannelActionPtzControlPayload struct {
 	Pan      int  `json:"pan"`
 	Tilt     int  `json:"tilt"`
