@@ -144,6 +144,55 @@ func (d *NetsocsDriverClient) AddConfigHandler(configKey config.NetsocsConfigKey
 	return config.AddConfigHandler(configKey, configHandler)
 }
 
+type LicenseMetadata struct {
+	AccessControlDevices  int    `json:"accessControlDevices"`
+	AlarmDevices          int    `json:"alarmDevices"`
+	ClientName            string `json:"clientName"`
+	CredentialModule      bool   `json:"credentialModule"`
+	Drivers               int    `json:"drivers"`
+	ExpirationDate        string `json:"expirationDate"`
+	LidarDevices          int    `json:"lidarDevices"`
+	OtherDevices          int    `json:"otherDevices"`
+	Sites                 int    `json:"sites"`
+	SupportExpiration     string `json:"supportExpiration"`
+	VideoAnalyticsDevices int    `json:"videoAnalyticsDevices"`
+	VideoChannels         int    `json:"videoChannels"`
+	VisitModule           bool   `json:"visitModule"`
+}
+
+type LicenseInfo struct {
+	Name             string          `json:"name"`
+	Key              string          `json:"key"`
+	Expiry           string          `json:"expiry"`
+	Scheme           string          `json:"scheme"`
+	RequireHeartbeat bool            `json:"requireHeartbeat"`
+	LastValidated    string          `json:"lastValidated"`
+	Created          string          `json:"created"`
+	Updated          string          `json:"updated"`
+	Metadata         LicenseMetadata `json:"metadata"`
+}
+
+type LicenseResponse struct {
+	License struct {
+		License LicenseInfo `json:"license"`
+		Policy  interface{} `json:"policy"`
+	} `json:"license"`
+}
+
+func (d *NetsocsDriverClient) GetLicense() (LicenseResponse, error) {
+	resp, err := resty.New().R().SetHeader("X-Auth-Token", d.token).Get(d.driverHubHost + "/license")
+	if err != nil {
+		return LicenseResponse{}, err
+	}
+
+	var license LicenseResponse
+	if err := json.Unmarshal(resp.Body(), &license); err != nil {
+		return LicenseResponse{}, err
+	}
+
+	return license, nil
+}
+
 func (d *NetsocsDriverClient) buildURL(uri string) string {
 	if d.isSSL {
 		return fmt.Sprintf("https://%s/api/v1/%s", d.driverHubHost, uri)
