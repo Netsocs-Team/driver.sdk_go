@@ -4,8 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-
-	"github.com/goccy/go-json"
 )
 
 type octopusObject struct {
@@ -91,22 +89,11 @@ func (s *octopusObject) GetMetadata() ObjectMetadata {
 
 // RunAction implements RegistrableObject.
 func (s *octopusObject) RunAction(id, action string, payload []byte) (map[string]string, error) {
-	var payloadMap map[string]string
-	err := json.Unmarshal(payload, &payloadMap)
-	if err != nil {
-		return nil, err
-	}
 	switch action {
 	case OCTOPUS_ACTION_RELAY_ON:
-		if payloadMap["relay_id"] == "" {
-			return nil, fmt.Errorf("relay_id is required")
-		}
-		return s.relayOnFn(s, s.controller, RelayOnPayload{RelayID: payloadMap["relay_id"]})
+		return s.relayOnFn(s, s.controller, RelayOnPayload{RelayID: string(payload)})
 	case OCTOPUS_ACTION_RELAY_OFF:
-		if payloadMap["relay_id"] == "" {
-			return nil, fmt.Errorf("relay_id is required")
-		}
-		return s.relayOffFn(s, s.controller, RelayOffPayload{RelayID: payloadMap["relay_id"]})
+		return s.relayOffFn(s, s.controller, RelayOffPayload{RelayID: string(payload)})
 	}
 	return nil, fmt.Errorf("action %s not found", action)
 }
