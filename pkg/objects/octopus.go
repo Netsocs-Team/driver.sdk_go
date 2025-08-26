@@ -83,7 +83,7 @@ func (s *octopusObject) GetAvailableStates() []string {
 
 // GetMetadata implements RegistrableObject.
 func (s *octopusObject) GetMetadata() ObjectMetadata {
-	s.metatada.Type = "sensor"
+	s.metatada.Type = "octopus"
 	return s.metatada
 }
 
