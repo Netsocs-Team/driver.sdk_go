@@ -305,26 +305,29 @@ func (c *NetsocsDriverClient) PatchEvent(eventId string, event objects.EventReco
 	return nil
 }
 
-func (c *NetsocsDriverClient) SetObjectsBatchState(states []objects.ObjectStateChange) (objects.ChangeStateBatchResponse, error) {
+func (c *NetsocsDriverClient) SetObjectsBatchState(states []objects.ObjectStateChange) ([]objects.ChangeStateBatchResponse, error) {
 	body := objects.ChangeStateBatchRequest{
 		Changes: states,
 	}
 	resp, err := resty.New().R().SetHeader("X-Auth-Token", c.token).SetBody(body).Put(c.driverHubHost + "/objects/states-batch")
 	if err != nil {
-		return objects.ChangeStateBatchResponse{}, err
+		return []objects.ChangeStateBatchResponse{}, err
 	}
 
 	if resp.IsError() {
-		return objects.ChangeStateBatchResponse{}, errors.New(resp.String())
+		return []objects.ChangeStateBatchResponse{}, errors.New(resp.String())
 	}
-	var response objects.ChangeStateBatchResponse
+	var response []objects.ChangeStateBatchResponse
 	if err := json.Unmarshal(resp.Body(), &response); err != nil {
-		return objects.ChangeStateBatchResponse{}, err
+		return []objects.ChangeStateBatchResponse{}, err
 	}
 
-	if response.Error != "" {
-		return objects.ChangeStateBatchResponse{}, errors.New(response.Error)
+	var errorResponse string
+	for _, response := range response {
+		if response.Error != "" {
+			errorResponse += fmt.Sprintf("Error on object: %s: %s | ", response.ID, response.Error)
+		}
 	}
 
-	return response, nil
+	return response, errors.New(errorResponse)
 }
