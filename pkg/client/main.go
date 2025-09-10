@@ -328,6 +328,9 @@ func (c *NetsocsDriverClient) SetObjectsBatchState(states []objects.ObjectStateC
 			errorResponse += fmt.Sprintf("Error on object: %s: %s | ", response.ID, response.Error)
 		}
 	}
+	if errorResponse != "" {
+		return response, errors.New(errorResponse)
+	}
 
-	return response, errors.New(errorResponse)
+	return response, nil
 }
