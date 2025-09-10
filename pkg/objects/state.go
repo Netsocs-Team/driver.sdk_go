@@ -13,6 +13,33 @@ type State struct {
 	StateAdditionalProperties map[string]string `json:"state_additional_properties" bson:"state_additional_properties"`
 }
 
+type ChangeStateBatchRequest struct {
+	Changes []ObjectStateChange `json:"changes"`
+}
+
+type ChangeStateBatchResponse struct {
+	ID          string                      `json:"objects_id"`
+	Datetime    string                      `json:"datetime"`
+	Error       string                      `json:"error"`
+	Changed     bool                        `json:"changed"`
+	ObjectState ObjectStateChangedEventData `json:"object_state"`
+}
+
+type ObjectStateChangedEventData struct {
+	ID        string `json:"id"`
+	ObjectID  string `json:"object_id"`
+	Datetime  string `json:"datetime"`
+	Domain    string `json:"domain"`
+	PrevState struct {
+		State                     string            `json:"state"`
+		StateAdditionalProperties map[string]string `json:"state_additional_properties"`
+	} `json:"prev_state"`
+	NewState struct {
+		State                     string            `json:"state"`
+		StateAdditionalProperties map[string]string `json:"state_additional_properties"`
+	} `json:"new_state"`
+}
+
 type ObjectStateChange struct {
 	ObjectID                  string            `json:"object_id"`
 	State                     string            `json:"state"`

@@ -304,3 +304,27 @@ func (c *NetsocsDriverClient) PatchEvent(eventId string, event objects.EventReco
 
 	return nil
 }
+
+func (c *NetsocsDriverClient) SetObjectsBatchState(states []objects.ObjectStateChange) (objects.ChangeStateBatchResponse, error) {
+	body := objects.ChangeStateBatchRequest{
+		Changes: states,
+	}
+	resp, err := resty.New().R().SetHeader("X-Auth-Token", c.token).SetBody(body).Put(c.driverHubHost + "/objects/states-batch")
+	if err != nil {
+		return objects.ChangeStateBatchResponse{}, err
+	}
+
+	if resp.IsError() {
+		return objects.ChangeStateBatchResponse{}, errors.New(resp.String())
+	}
+	var response objects.ChangeStateBatchResponse
+	if err := json.Unmarshal(resp.Body(), &response); err != nil {
+		return objects.ChangeStateBatchResponse{}, err
+	}
+
+	if response.Error != "" {
+		return objects.ChangeStateBatchResponse{}, errors.New(response.Error)
+	}
+
+	return response, nil
+}
