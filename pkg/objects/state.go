@@ -18,7 +18,7 @@ type ChangeStateBatchRequest struct {
 }
 
 type ChangeStateBatchResponse struct {
-	ID          string                      `json:"objects_id"`
+	ID          string                      `json:"object_id"`
 	Datetime    string                      `json:"datetime"`
 	Error       string                      `json:"error"`
 	Changed     bool                        `json:"changed"`
