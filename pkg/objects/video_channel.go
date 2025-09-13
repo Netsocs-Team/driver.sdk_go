@@ -38,7 +38,7 @@ const (
 	PTZ_COMMAND_ZOOM_IN    PTZCommand = "zoom_in"
 	PTZ_COMMAND_ZOOM_OUT   PTZCommand = "zoom_out"
 	PTZ_COMMAND_STOP       PTZCommand = "stop"
-	PTZ_COMMAND_FOCUS      PTZCommand = "focus_near"
+	PTZ_COMMAND_FOCUS_NEAR PTZCommand = "focus_near"
 	PTZ_COMMAND_FOCUS_FAR  PTZCommand = "focus_far"
 	PTZ_COMMAND_IRIS       PTZCommand = "iris"
 )
