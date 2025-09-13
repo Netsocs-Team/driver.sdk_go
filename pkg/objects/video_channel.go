@@ -40,7 +40,8 @@ const (
 	PTZ_COMMAND_STOP       PTZCommand = "stop"
 	PTZ_COMMAND_FOCUS_NEAR PTZCommand = "focus_near"
 	PTZ_COMMAND_FOCUS_FAR  PTZCommand = "focus_far"
-	PTZ_COMMAND_IRIS       PTZCommand = "iris"
+	PTZ_COMMAND_IRIS_OPEN  PTZCommand = "iris_open"
+	PTZ_COMMAND_IRIS_CLOSE PTZCommand = "iris_close"
 )
 
 const PTZ_MAX_SPEED = 10
