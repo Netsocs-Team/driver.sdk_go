@@ -27,15 +27,19 @@ const VIDEO_CHANNEL_SEEK_STATE_VIDEO_ENGINE_NOT_AVAILABLE = "video_engine_not_av
 type PTZCommand string
 
 const (
-	PTZ_COMMAND_UP       PTZCommand = "up"
-	PTZ_COMMAND_DOWN     PTZCommand = "down"
-	PTZ_COMMAND_LEFT     PTZCommand = "left"
-	PTZ_COMMAND_RIGHT    PTZCommand = "right"
-	PTZ_COMMAND_ZOOM_IN  PTZCommand = "zoom_in"
-	PTZ_COMMAND_ZOOM_OUT PTZCommand = "zoom_out"
-	PTZ_COMMAND_STOP     PTZCommand = "stop"
-	PTZ_COMMAND_FOCUS    PTZCommand = "focus"
-	PTZ_COMMAND_IRIS     PTZCommand = "iris"
+	PTZ_COMMAND_UP         PTZCommand = "up"
+	PTZ_COMMAND_DOWN       PTZCommand = "down"
+	PTZ_COMMAND_LEFT       PTZCommand = "left"
+	PTZ_COMMAND_RIGHT      PTZCommand = "right"
+	PTZ_COMMAND_UP_LEFT    PTZCommand = "up_left"
+	PTZ_COMMAND_UP_RIGHT   PTZCommand = "up_right"
+	PTZ_COMMAND_DOWN_LEFT  PTZCommand = "down_left"
+	PTZ_COMMAND_DOWN_RIGHT PTZCommand = "down_right"
+	PTZ_COMMAND_ZOOM_IN    PTZCommand = "zoom_in"
+	PTZ_COMMAND_ZOOM_OUT   PTZCommand = "zoom_out"
+	PTZ_COMMAND_STOP       PTZCommand = "stop"
+	PTZ_COMMAND_FOCUS      PTZCommand = "focus"
+	PTZ_COMMAND_IRIS       PTZCommand = "iris"
 )
 
 const PTZ_MAX_SPEED = 10
