@@ -24,11 +24,28 @@ const VIDEO_CHANNEL_SEEK_STATE_PLAYING = "playing"
 const VIDEO_CHANNEL_SEEK_STATE_SEEKING = "seeking"
 const VIDEO_CHANNEL_SEEK_STATE_VIDEO_ENGINE_NOT_AVAILABLE = "video_engine_not_available"
 
+type PTZCommand string
+
+const (
+	PTZ_COMMAND_UP       PTZCommand = "up"
+	PTZ_COMMAND_DOWN     PTZCommand = "down"
+	PTZ_COMMAND_LEFT     PTZCommand = "left"
+	PTZ_COMMAND_RIGHT    PTZCommand = "right"
+	PTZ_COMMAND_ZOOM_IN  PTZCommand = "zoom_in"
+	PTZ_COMMAND_ZOOM_OUT PTZCommand = "zoom_out"
+	PTZ_COMMAND_STOP     PTZCommand = "stop"
+	PTZ_COMMAND_FOCUS    PTZCommand = "focus"
+	PTZ_COMMAND_IRIS     PTZCommand = "iris"
+)
+
+const PTZ_MAX_SPEED = 10
+const PTZ_MIN_SPEED = 1
+
 type VideoChannelActionPtzControlPayload struct {
-	Pan      int  `json:"pan"`
-	Tilt     int  `json:"tilt"`
-	Zoom     int  `json:"zoom"`
-	Relative bool `json:"relative"`
+	Command  PTZCommand `json:"command"`  //up, down, left, right, zoom_in, zoom_out, stop
+	Duration int        `json:"duration"` //duration in milliseconds
+	Speed    int        `json:"speed"`    //1-10
+	Relative bool       `json:"relative"`
 }
 
 type VideoClipActionPayload struct {
