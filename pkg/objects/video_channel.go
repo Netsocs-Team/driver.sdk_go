@@ -46,9 +46,8 @@ const PTZ_MAX_SPEED = 10
 const PTZ_MIN_SPEED = 1
 
 type VideoChannelActionPtzControlPayload struct {
-	Command  PTZCommand `json:"command"`  //up, down, left, right, zoom_in, zoom_out, stop
-	Duration int        `json:"duration"` //duration in milliseconds
-	Speed    int        `json:"speed"`    //1-10
+	Command  PTZCommand `json:"command"` //up, down, left, right, zoom_in, zoom_out, stop
+	Value    int        `json:"value"`   //speed value from 1 to 10
 	Relative bool       `json:"relative"`
 }
 
