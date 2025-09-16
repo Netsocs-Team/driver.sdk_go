@@ -3,6 +3,8 @@ package objects
 type personObject struct {
 	metadata   ObjectMetadata
 	controller ObjectController
+
+	setupFn func(this PersonObject, controller ObjectController) error
 }
 
 // GetAvailableActions implements RegistrableObject.
@@ -17,6 +19,7 @@ func (p *personObject) GetAvailableStates() []string {
 
 // GetMetadata implements RegistrableObject.
 func (p *personObject) GetMetadata() ObjectMetadata {
+	p.metadata.Type = "person"
 	return p.metadata
 }
 
@@ -33,6 +36,9 @@ func (p *personObject) SetState(state string) error {
 // Setup implements RegistrableObject.
 func (p *personObject) Setup(oc ObjectController) error {
 	p.controller = oc
+	if p.setupFn != nil {
+		return p.setupFn(p, oc)
+	}
 	return nil
 }
 
@@ -41,12 +47,18 @@ func (p *personObject) UpdateStateAttributes(attributes map[string]string) error
 	return p.controller.UpdateStateAttributes(p.metadata.ObjectID, attributes)
 }
 
-type NewPersonObjectParams struct {
-	Metadata ObjectMetadata
+type PersonObject interface {
+	RegistrableObject
 }
 
-func NewPersonObject(params NewPersonObjectParams) RegistrableObject {
+type NewPersonObjectParams struct {
+	Metadata ObjectMetadata
+	SetupFn  func(this PersonObject, controller ObjectController) error
+}
+
+func NewPersonObject(params NewPersonObjectParams) PersonObject {
 	return &personObject{
 		metadata: params.Metadata,
+		setupFn:  params.SetupFn,
 	}
 }
