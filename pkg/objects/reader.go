@@ -20,6 +20,7 @@ const READER_ACTION_RESTART = "reader.action.restart"
 const READER_ACTION_STORE_QRS = "reader.action.store_qrs"
 const READER_ACTION_DELETE_QRS = "reader.action.delete_qrs"
 const READER_ACTION_DELETE_PERSON = "reader.action.delete_person"
+const READER_ACTION_GET_PEOPLE = "get_people"
 
 // domain
 const READER_DOMAIN = "reader"
@@ -38,6 +39,48 @@ type ReaderObject interface {
 	RegistrableObject
 }
 
+type ReaderPeople struct {
+	People          []ReaderPerson         `json:"people"`
+	SupportSchedule bool                   `json:"support_schedule"`
+	Schedules       []ReaderPersonSchedule `json:"schedule"`
+}
+
+type ReaderPersonSchedule struct {
+	ID        string                        `json:"id"`
+	Monday    ReaderPersonScheduleDay       `json:"monday"`
+	Tuesday   ReaderPersonScheduleDay       `json:"tuesday"`
+	Wednesday ReaderPersonScheduleDay       `json:"wednesday"`
+	Thursday  ReaderPersonScheduleDay       `json:"thursday"`
+	Friday    ReaderPersonScheduleDay       `json:"friday"`
+	Saturday  ReaderPersonScheduleDay       `json:"saturday"`
+	Sunday    ReaderPersonScheduleDay       `json:"sunday"`
+	Holidays  []ReaderPersonScheduleHoliday `json:"holidays"`
+}
+
+type ReaderPersonScheduleHoliday struct {
+	Date    string `json:"date"`
+	Enabled bool   `json:"enabled"`
+}
+
+type ReaderPersonScheduleDay struct {
+	Start   string `json:"start"` // RFC 3339
+	End     string `json:"end"`   // RFC 3339
+	Enabled bool   `json:"enabled"`
+}
+
+type ReaderPerson struct {
+	PersonId    string             `json:"person_id"`
+	Name        string             `json:"name"`
+	Credentials []ReaderCredential `json:"credentials"`
+}
+
+type ReaderCredential struct {
+	ID          string `json:"id"`
+	Type        string `json:"type"`
+	Value       string `json:"value"`
+	LastUpdated string `json:"last_updated"`
+}
+
 type readerObject struct {
 	metadata   ObjectMetadata
 	controller ObjectController
@@ -47,6 +90,7 @@ type readerObject struct {
 	storeQRCredentials      func(this ReaderObject, controller ObjectController, payload QRPayload) error
 	deleteQRCredentials     func(this ReaderObject, controller ObjectController, payload QRPayload) error
 	deletePersonCredentials func(this ReaderObject, controller ObjectController, payload DeletePersonPayload) error
+	getPeopleCredentials    func(this ReaderObject, controller ObjectController) (ReaderPeople, error)
 }
 
 // UpdateStateAttributes implements ReaderObject.
@@ -83,6 +127,10 @@ func (r *readerObject) GetAvailableActions() []ObjectAction {
 		},
 		{
 			Action: READER_ACTION_DELETE_PERSON,
+			Domain: r.metadata.Domain,
+		},
+		{
+			Action: READER_ACTION_GET_PEOPLE,
 			Domain: r.metadata.Domain,
 		},
 	}
@@ -126,6 +174,17 @@ func (r *readerObject) RunAction(id, action string, payload []byte) (map[string]
 			return nil, err
 		}
 		return nil, r.deletePersonCredentials(r, r.controller, deletePersonPayload)
+
+	case READER_ACTION_GET_PEOPLE:
+		people, err := r.getPeopleCredentials(r, r.controller)
+		if err != nil {
+			return nil, err
+		}
+		peopleBytes, err := json.Marshal(people)
+		if err != nil {
+			return nil, err
+		}
+		return map[string]string{"people": string(peopleBytes)}, nil
 	}
 
 	return nil, fmt.Errorf("action %s not found", action)
@@ -158,6 +217,7 @@ type NewReaderObjectParams struct {
 	StoreQRCredentialsMethod      func(this ReaderObject, controller ObjectController, payload QRPayload) error
 	DeleteQRCredentialsMethod     func(this ReaderObject, controller ObjectController, payload QRPayload) error
 	DeletePersonCredentialsMethod func(this ReaderObject, controller ObjectController, payload DeletePersonPayload) error
+	GetPeopleCredentialsMethod    func(this ReaderObject, controller ObjectController) (ReaderPeople, error)
 }
 
 func NewReaderObject(params NewReaderObjectParams) ReaderObject {
@@ -168,5 +228,6 @@ func NewReaderObject(params NewReaderObjectParams) ReaderObject {
 		storeQRCredentials:      params.StoreQRCredentialsMethod,
 		deleteQRCredentials:     params.DeleteQRCredentialsMethod,
 		deletePersonCredentials: params.DeletePersonCredentialsMethod,
+		getPeopleCredentials:    params.GetPeopleCredentialsMethod,
 	}
 }
