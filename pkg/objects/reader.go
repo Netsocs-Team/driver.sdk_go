@@ -21,6 +21,7 @@ const READER_ACTION_STORE_QRS = "reader.action.store_qrs"
 const READER_ACTION_DELETE_QRS = "reader.action.delete_qrs"
 const READER_ACTION_DELETE_PERSON = "reader.action.delete_person"
 const READER_ACTION_GET_PEOPLE = "get_people"
+const READER_ACTION_SET_PEOPLE = "set_people"
 
 // domain
 const READER_DOMAIN = "reader"
@@ -91,6 +92,8 @@ type readerObject struct {
 	deleteQRCredentials     func(this ReaderObject, controller ObjectController, payload QRPayload) error
 	deletePersonCredentials func(this ReaderObject, controller ObjectController, payload DeletePersonPayload) error
 	getPeopleCredentials    func(this ReaderObject, controller ObjectController) (ReaderPeople, error)
+	setPeopleCredentials    func(this ReaderObject, controller ObjectController, payload ReaderPeople) error
+	storePeopleCredentials  func(this ReaderObject, controller ObjectController, payload ReaderPeople) error
 }
 
 // UpdateStateAttributes implements ReaderObject.
@@ -131,6 +134,10 @@ func (r *readerObject) GetAvailableActions() []ObjectAction {
 		},
 		{
 			Action: READER_ACTION_GET_PEOPLE,
+			Domain: r.metadata.Domain,
+		},
+		{
+			Action: READER_ACTION_SET_PEOPLE,
 			Domain: r.metadata.Domain,
 		},
 	}
@@ -185,6 +192,13 @@ func (r *readerObject) RunAction(id, action string, payload []byte) (map[string]
 			return nil, err
 		}
 		return map[string]string{"people": string(peopleBytes)}, nil
+
+	case READER_ACTION_SET_PEOPLE:
+		people := ReaderPeople{}
+		if err := json.Unmarshal(payload, &people); err != nil {
+			return nil, err
+		}
+		return nil, r.setPeopleCredentials(r, r.controller, people)
 	}
 
 	return nil, fmt.Errorf("action %s not found", action)
@@ -218,6 +232,8 @@ type NewReaderObjectParams struct {
 	DeleteQRCredentialsMethod     func(this ReaderObject, controller ObjectController, payload QRPayload) error
 	DeletePersonCredentialsMethod func(this ReaderObject, controller ObjectController, payload DeletePersonPayload) error
 	GetPeopleCredentialsMethod    func(this ReaderObject, controller ObjectController) (ReaderPeople, error)
+	SetPeopleCredentialsMethod    func(this ReaderObject, controller ObjectController, payload ReaderPeople) error
+	StorePeopleCredentialsMethod  func(this ReaderObject, controller ObjectController, payload ReaderPeople) error
 }
 
 func NewReaderObject(params NewReaderObjectParams) ReaderObject {
@@ -229,5 +245,7 @@ func NewReaderObject(params NewReaderObjectParams) ReaderObject {
 		deleteQRCredentials:     params.DeleteQRCredentialsMethod,
 		deletePersonCredentials: params.DeletePersonCredentialsMethod,
 		getPeopleCredentials:    params.GetPeopleCredentialsMethod,
+		setPeopleCredentials:    params.SetPeopleCredentialsMethod,
+		storePeopleCredentials:  params.StorePeopleCredentialsMethod,
 	}
 }
