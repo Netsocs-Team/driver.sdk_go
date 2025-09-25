@@ -2,6 +2,7 @@ package objects
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/goccy/go-json"
 )
@@ -13,7 +14,7 @@ const READER_STATE_UNKNOWN = "reader.state.unknown"
 const READER_STATE_ERROR = "reader.state.error"
 
 // actions
-const READER_ACTION_READ = "reader.action.read"
+const READER_ACTION_READ = "read"
 const READER_ACTION_STOP = "reader.action.stop"
 const READER_ACTION_RESET = "reader.action.reset"
 const READER_ACTION_RESTART = "reader.action.restart"
@@ -47,15 +48,16 @@ type ReaderPeople struct {
 }
 
 type ReaderPersonSchedule struct {
-	ID        string                        `json:"id"`
-	Monday    ReaderPersonScheduleDay       `json:"monday"`
-	Tuesday   ReaderPersonScheduleDay       `json:"tuesday"`
-	Wednesday ReaderPersonScheduleDay       `json:"wednesday"`
-	Thursday  ReaderPersonScheduleDay       `json:"thursday"`
-	Friday    ReaderPersonScheduleDay       `json:"friday"`
-	Saturday  ReaderPersonScheduleDay       `json:"saturday"`
-	Sunday    ReaderPersonScheduleDay       `json:"sunday"`
-	Holidays  []ReaderPersonScheduleHoliday `json:"holidays"`
+	LastUpdated string                        `json:"last_updated"`
+	ID          string                        `json:"id"`
+	Monday      ReaderPersonScheduleDay       `json:"monday"`
+	Tuesday     ReaderPersonScheduleDay       `json:"tuesday"`
+	Wednesday   ReaderPersonScheduleDay       `json:"wednesday"`
+	Thursday    ReaderPersonScheduleDay       `json:"thursday"`
+	Friday      ReaderPersonScheduleDay       `json:"friday"`
+	Saturday    ReaderPersonScheduleDay       `json:"saturday"`
+	Sunday      ReaderPersonScheduleDay       `json:"sunday"`
+	Holidays    []ReaderPersonScheduleHoliday `json:"holidays"`
 }
 
 type ReaderPersonScheduleHoliday struct {
@@ -82,18 +84,32 @@ type ReaderCredential struct {
 	LastUpdated string `json:"last_updated"`
 }
 
+type CredentialType string
+
+const (
+	CREDENTIAL_TYPE_FACE                      CredentialType = "face"
+	CREDENTIAL_TYPE_NORMAL_CARD               CredentialType = "normal_card"
+	CREDENTIAL_TYPE_FINGERPRINT_ISO_19794_2   CredentialType = "fingerprint_iso_19794_2"
+	CREDENTIAL_TYPE_FINGERPRINT_ANSI_378_2004 CredentialType = "fingerprint_ansi_378_2004"
+)
+
+type ReadCreadentialPayload struct {
+	Type CredentialType `json:"type"`
+}
+
 type readerObject struct {
 	metadata   ObjectMetadata
 	controller ObjectController
 
-	setupFunc               func(this ReaderObject, controller ObjectController) error
-	restart                 func(this ReaderObject, controller ObjectController) error
-	storeQRCredentials      func(this ReaderObject, controller ObjectController, payload QRPayload) error
-	deleteQRCredentials     func(this ReaderObject, controller ObjectController, payload QRPayload) error
-	deletePersonCredentials func(this ReaderObject, controller ObjectController, payload DeletePersonPayload) error
-	getPeopleCredentials    func(this ReaderObject, controller ObjectController) (ReaderPeople, error)
-	setPeopleCredentials    func(this ReaderObject, controller ObjectController, payload ReaderPeople) error
-	storePeopleCredentials  func(this ReaderObject, controller ObjectController, payload ReaderPeople) error
+	setupFunc                func(this ReaderObject, controller ObjectController) error
+	restart                  func(this ReaderObject, controller ObjectController) error
+	storeQRCredentials       func(this ReaderObject, controller ObjectController, payload QRPayload) error
+	deleteQRCredentials      func(this ReaderObject, controller ObjectController, payload QRPayload) error
+	deletePersonCredentials  func(this ReaderObject, controller ObjectController, payload DeletePersonPayload) error
+	getPeopleCredentials     func(this ReaderObject, controller ObjectController) (ReaderPeople, error)
+	setPeopleCredentials     func(this ReaderObject, controller ObjectController, payload ReaderPeople) error
+	storePeopleCredentials   func(this ReaderObject, controller ObjectController, payload ReaderPeople) error
+	supportedCredentialTypes []CredentialType
 }
 
 // UpdateStateAttributes implements ReaderObject.
@@ -217,6 +233,16 @@ func (r *readerObject) Setup(oc ObjectController) error {
 		return nil
 	}
 
+	if len(r.supportedCredentialTypes) > 0 {
+		list := []string{}
+		for _, t := range r.supportedCredentialTypes {
+			list = append(list, string(t))
+		}
+		oc.UpdateStateAttributes(r.metadata.ObjectID, map[string]string{
+			"supported_credential_types": strings.Join(list, ","),
+		})
+	}
+
 	return r.setupFunc(r, oc)
 }
 
@@ -234,18 +260,20 @@ type NewReaderObjectParams struct {
 	GetPeopleCredentialsMethod    func(this ReaderObject, controller ObjectController) (ReaderPeople, error)
 	SetPeopleCredentialsMethod    func(this ReaderObject, controller ObjectController, payload ReaderPeople) error
 	StorePeopleCredentialsMethod  func(this ReaderObject, controller ObjectController, payload ReaderPeople) error
+	SupportedCredentialTypes      []CredentialType
 }
 
 func NewReaderObject(params NewReaderObjectParams) ReaderObject {
 	return &readerObject{
-		metadata:                params.Metadata,
-		setupFunc:               params.SetupFunc,
-		restart:                 params.RestartMethod,
-		storeQRCredentials:      params.StoreQRCredentialsMethod,
-		deleteQRCredentials:     params.DeleteQRCredentialsMethod,
-		deletePersonCredentials: params.DeletePersonCredentialsMethod,
-		getPeopleCredentials:    params.GetPeopleCredentialsMethod,
-		setPeopleCredentials:    params.SetPeopleCredentialsMethod,
-		storePeopleCredentials:  params.StorePeopleCredentialsMethod,
+		metadata:                 params.Metadata,
+		setupFunc:                params.SetupFunc,
+		restart:                  params.RestartMethod,
+		storeQRCredentials:       params.StoreQRCredentialsMethod,
+		deleteQRCredentials:      params.DeleteQRCredentialsMethod,
+		deletePersonCredentials:  params.DeletePersonCredentialsMethod,
+		getPeopleCredentials:     params.GetPeopleCredentialsMethod,
+		setPeopleCredentials:     params.SetPeopleCredentialsMethod,
+		storePeopleCredentials:   params.StorePeopleCredentialsMethod,
+		supportedCredentialTypes: params.SupportedCredentialTypes,
 	}
 }
