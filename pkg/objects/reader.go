@@ -2,6 +2,7 @@ package objects
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/goccy/go-json"
@@ -97,6 +98,11 @@ type ReadCreadentialPayload struct {
 	Type CredentialType `json:"type"`
 }
 
+type ReadCredentialResponse struct {
+	Data     string            `json:"data"`
+	Metadata map[string]string `json:"metadata"`
+}
+
 type readerObject struct {
 	metadata   ObjectMetadata
 	controller ObjectController
@@ -109,6 +115,7 @@ type readerObject struct {
 	getPeopleCredentials     func(this ReaderObject, controller ObjectController) (ReaderPeople, error)
 	setPeopleCredentials     func(this ReaderObject, controller ObjectController, payload ReaderPeople) error
 	storePeopleCredentials   func(this ReaderObject, controller ObjectController, payload ReaderPeople) error
+	readCredential           func(this ReaderObject, controller ObjectController, payload ReadCreadentialPayload) (ReadCredentialResponse, error)
 	supportedCredentialTypes []CredentialType
 }
 
@@ -215,6 +222,26 @@ func (r *readerObject) RunAction(id, action string, payload []byte) (map[string]
 			return nil, err
 		}
 		return nil, r.setPeopleCredentials(r, r.controller, people)
+	case READER_ACTION_READ:
+		if r.readCredential == nil {
+			return nil, fmt.Errorf("read credential method not implemented")
+		}
+		readCredentialPayload := ReadCreadentialPayload{}
+		if err := json.Unmarshal(payload, &readCredentialPayload); err != nil {
+			return nil, err
+		}
+		if !slices.Contains(r.supportedCredentialTypes, readCredentialPayload.Type) {
+			return nil, fmt.Errorf("credential type '%s' not supported", readCredentialPayload.Type)
+		}
+		response, err := r.readCredential(r, r.controller, readCredentialPayload)
+		if err != nil {
+			return nil, err
+		}
+		responseBytes, err := json.Marshal(response)
+		if err != nil {
+			return nil, err
+		}
+		return map[string]string{"data": string(responseBytes)}, nil
 	}
 
 	return nil, fmt.Errorf("action %s not found", action)
@@ -260,6 +287,7 @@ type NewReaderObjectParams struct {
 	GetPeopleCredentialsMethod    func(this ReaderObject, controller ObjectController) (ReaderPeople, error)
 	SetPeopleCredentialsMethod    func(this ReaderObject, controller ObjectController, payload ReaderPeople) error
 	StorePeopleCredentialsMethod  func(this ReaderObject, controller ObjectController, payload ReaderPeople) error
+	ReadCredentialMethod          func(this ReaderObject, controller ObjectController, payload ReadCreadentialPayload) (ReadCredentialResponse, error)
 	SupportedCredentialTypes      []CredentialType
 }
 
@@ -275,5 +303,6 @@ func NewReaderObject(params NewReaderObjectParams) ReaderObject {
 		setPeopleCredentials:     params.SetPeopleCredentialsMethod,
 		storePeopleCredentials:   params.StorePeopleCredentialsMethod,
 		supportedCredentialTypes: params.SupportedCredentialTypes,
+		readCredential:           params.ReadCredentialMethod,
 	}
 }
