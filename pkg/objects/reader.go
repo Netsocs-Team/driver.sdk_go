@@ -256,10 +256,6 @@ func (r *readerObject) SetState(state string) error {
 func (r *readerObject) Setup(oc ObjectController) error {
 	r.controller = oc
 
-	if r.setupFunc == nil {
-		return nil
-	}
-
 	if len(r.supportedCredentialTypes) > 0 {
 		list := []string{}
 		for _, t := range r.supportedCredentialTypes {
@@ -268,6 +264,10 @@ func (r *readerObject) Setup(oc ObjectController) error {
 		oc.UpdateStateAttributes(r.metadata.ObjectID, map[string]string{
 			"supported_credential_types": strings.Join(list, ","),
 		})
+	}
+
+	if r.setupFunc == nil {
+		return nil
 	}
 
 	return r.setupFunc(r, oc)
