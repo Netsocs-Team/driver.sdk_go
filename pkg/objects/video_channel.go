@@ -69,10 +69,8 @@ type SnapshotActionPayload struct {
 type VideoChannelActionPtzControlPayloadDirection string
 
 // Metadata representa el mensaje completo de metadatos
-type Metadata struct {
-	CameraID  string    `json:"camera_id"`
+type AnalyticAnnotations struct {
 	Timestamp time.Time `json:"timestamp"`
-	FrameID   int64     `json:"frame_id,omitempty"`
 	Width     int       `json:"width"`
 	Height    int       `json:"height"`
 
@@ -144,7 +142,7 @@ type VideoChannelObject interface {
 	SetModeIdle() error
 	SetModeStreaming() error
 	SetModeUnknown() error
-	SetAnalyticsMetadata(metadata Metadata) error
+	SetAnalyticsMetadata(metadata AnalyticAnnotations) error
 }
 
 type SeekPayload struct {
@@ -176,7 +174,7 @@ type videoChannelObject struct {
 }
 
 // SetAnalyticsMetadata implements VideoChannelObject.
-func (v *videoChannelObject) SetAnalyticsMetadata(metadata Metadata) error {
+func (v *videoChannelObject) SetAnalyticsMetadata(metadata AnalyticAnnotations) error {
 	json, err := json.Marshal(metadata)
 	if err != nil {
 		return err
