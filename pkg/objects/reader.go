@@ -79,10 +79,11 @@ type ReaderPerson struct {
 }
 
 type ReaderCredential struct {
-	ID          string `json:"id"`
-	Type        string `json:"type"`
-	Value       string `json:"value"`
-	LastUpdated string `json:"last_updated"`
+	ID          string            `json:"id"`
+	Type        string            `json:"type"`
+	Data        string            `json:"data"`
+	Metadata    map[string]string `json:"metadata"`
+	LastUpdated string            `json:"last_updated"`
 }
 
 type CredentialType string
@@ -95,7 +96,8 @@ const (
 )
 
 type ReadCreadentialPayload struct {
-	Type CredentialType `json:"type"`
+	Type    CredentialType `json:"type"`
+	Timeout int            `json:"timeout"`
 }
 
 type ReadCredentialResponse struct {

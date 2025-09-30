@@ -3,6 +3,7 @@ package objects
 import (
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/goccy/go-json"
 )
@@ -67,6 +68,72 @@ type SnapshotActionPayload struct {
 
 type VideoChannelActionPtzControlPayloadDirection string
 
+// Metadata representa el mensaje completo de metadatos
+type Metadata struct {
+	CameraID  string    `json:"camera_id"`
+	Timestamp time.Time `json:"timestamp"`
+	FrameID   int64     `json:"frame_id,omitempty"`
+	Width     int       `json:"width"`
+	Height    int       `json:"height"`
+
+	Objects     []Object     `json:"objects,omitempty"`
+	Annotations []Annotation `json:"annotations,omitempty"`
+}
+
+// Object representa un objeto detectado
+type Object struct {
+	ID         string  `json:"id"`
+	Type       string  `json:"type"` // person, vehicle, face, etc.
+	Confidence float64 `json:"confidence"`
+
+	// Bounding box
+	X      int `json:"x"`
+	Y      int `json:"y"`
+	Width  int `json:"width"`
+	Height int `json:"height"`
+
+	// Atributos opcionales
+	Attributes map[string]string `json:"attributes,omitempty"`
+	TrackID    string            `json:"track_id,omitempty"`
+
+	// Estilo de dibujo
+	Color     string `json:"color,omitempty"`      // Color del borde
+	FillColor string `json:"fill_color,omitempty"` // Color de relleno
+	LineWidth int    `json:"line_width,omitempty"`
+}
+
+// Annotation representa una figura o texto para dibujar
+type Annotation struct {
+	Type string `json:"type"` // rectangle, polygon, line, circle, text
+
+	// Para todas las figuras
+	Points []Point `json:"points,omitempty"` // Para polygon, line
+
+	// Para rectangle y circle
+	X      int `json:"x,omitempty"`
+	Y      int `json:"y,omitempty"`
+	Width  int `json:"width,omitempty"`
+	Height int `json:"height,omitempty"`
+	Radius int `json:"radius,omitempty"` // Para circle
+
+	// Para text
+	Text     string `json:"text,omitempty"`
+	FontSize int    `json:"font_size,omitempty"`
+
+	// Estilo
+	Color     string `json:"color,omitempty"`
+	FillColor string `json:"fill_color,omitempty"`
+	LineWidth int    `json:"line_width,omitempty"`
+
+	Label string `json:"label,omitempty"`
+}
+
+// Point representa un punto 2D
+type Point struct {
+	X int `json:"x"`
+	Y int `json:"y"`
+}
+
 type VideoChannelObject interface {
 	RegistrableObject
 	// stream helpers
@@ -77,6 +144,7 @@ type VideoChannelObject interface {
 	SetModeIdle() error
 	SetModeStreaming() error
 	SetModeUnknown() error
+	SetAnalyticsMetadata(metadata Metadata) error
 }
 
 type SeekPayload struct {
@@ -105,6 +173,15 @@ type videoChannelObject struct {
 	videoclipFn func(VideoChannelObject, ObjectController, VideoClipActionPayload) (filename string, err error)
 	ptzFn       func(VideoChannelObject, ObjectController, VideoChannelActionPtzControlPayload) error
 	seekFn      func(VideoChannelObject, ObjectController, SeekPayload) error
+}
+
+// SetAnalyticsMetadata implements VideoChannelObject.
+func (v *videoChannelObject) SetAnalyticsMetadata(metadata Metadata) error {
+	json, err := json.Marshal(metadata)
+	if err != nil {
+		return err
+	}
+	return v.controller.UpdateStateAttributes(v.GetMetadata().ObjectID, map[string]string{"analytics_metadata": string(json)})
 }
 
 // UpdateStateAttributes implements VideoChannelObject.
