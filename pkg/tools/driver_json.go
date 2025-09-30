@@ -14,6 +14,7 @@ type FileSchema struct {
 	DriverBinaryFilename string `json:"driver_binary_filename"`
 	DocumentationURL     string `json:"documentation_url"`
 	SiteID               string `json:"site_id"`
+	SiteHost             string `json:"site_host"`
 	Token                string `json:"token"`
 	DriverID             string `json:"driver_id"`
 }

@@ -25,6 +25,7 @@ type NetsocsDriverClient struct {
 	driverID            string
 	driverVersion       string
 	driverDocumentation string
+	siteHost            string
 }
 
 func (n *NetsocsDriverClient) SetVideoEngineID(videoEngineID string) {
@@ -43,6 +44,10 @@ func (n *NetsocsDriverClient) SetDriverID(driverID string) {
 	n.driverID = driverID
 }
 
+func (n *NetsocsDriverClient) SetSiteHost(siteHost string) {
+	n.siteHost = siteHost
+}
+
 func (n *NetsocsDriverClient) GetToken() string {
 	return n.token
 }
@@ -53,6 +58,10 @@ func (n *NetsocsDriverClient) GetDriverID() string {
 
 func (n *NetsocsDriverClient) GetSiteID() string {
 	return n.siteID
+}
+
+func (n *NetsocsDriverClient) GetSiteHost() string {
+	return n.siteHost
 }
 
 func NewNetsocsDriverClient(driverKey string, driverHubHost string, isSSL bool) *NetsocsDriverClient {
@@ -99,7 +108,7 @@ func New() (*NetsocsDriverClient, error) {
 	client.SetSiteID(fileData.SiteID)
 	client.SetToken(fileData.Token)
 	client.SetDriverID(fileData.DriverID)
-
+	client.SetSiteHost(fileData.SiteHost)
 	return client, nil
 }
 
