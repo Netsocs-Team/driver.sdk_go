@@ -49,6 +49,9 @@ func (v *videoEngineObject) RunAction(id, action string, payload []byte) (map[st
 // Setup implements VideoEngineObject.
 func (v *videoEngineObject) Setup(oc ObjectController) error {
 	v.controller = oc
+	if v.setup == nil {
+		return nil
+	}
 	return v.setup(v, oc)
 }
 
