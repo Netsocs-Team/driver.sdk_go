@@ -19,7 +19,7 @@ type RelativeZoneShape struct {
 	Vertices []RelativeZoneVertice
 }
 
-type RelativeZoneParams struct {
+type NewRelativeZoneObjectParams struct {
 	Metadata ObjectMetadata
 	Shape    RelativeZoneShape
 	SetupFn  func(this RelativeZoneObject, controller ObjectController) error
@@ -88,7 +88,7 @@ func (r *relativeZoneObject) UpdateStateAttributes(attributes map[string]string)
 	return r.controller.UpdateStateAttributes(r.metadata.ObjectID, attributes)
 }
 
-func NewRelativeZoneObject(params RelativeZoneParams) RelativeZoneObject {
+func NewRelativeZoneObject(params NewRelativeZoneObjectParams) RelativeZoneObject {
 	return &relativeZoneObject{
 		metadata: params.Metadata,
 		shape:    params.Shape,
