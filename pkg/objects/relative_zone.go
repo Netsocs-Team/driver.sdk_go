@@ -11,12 +11,12 @@ type RelativeZoneObject interface {
 }
 
 type RelativeZoneVertice struct {
-	X float64
-	Y float64
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
 }
 
 type RelativeZoneShape struct {
-	Vertices []RelativeZoneVertice
+	Vertices []RelativeZoneVertice `json:"vertices"`
 }
 
 type NewRelativeZoneObjectParams struct {
