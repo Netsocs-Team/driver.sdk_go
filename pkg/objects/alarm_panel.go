@@ -149,9 +149,10 @@ func (a *alarmPanelObject) RunAction(id, action string, payload []byte) (map[str
 // Setup implements AlarmPanelObject.
 func (a *alarmPanelObject) Setup(oc ObjectController) error {
 	a.controller = oc
-
-	a.setupFn(a, oc)
-	return nil
+	if a.setupFn == nil {
+		return nil
+	}
+	return a.setupFn(a, oc)
 }
 
 type NewAlarmPanelObjectProps struct {

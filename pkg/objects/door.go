@@ -81,7 +81,9 @@ func (d *doorObject) RunAction(id, action string, payload []byte) (map[string]st
 // Setup implements DoorObject.
 func (d *doorObject) Setup(oc ObjectController) error {
 	d.controller = oc
-
+	if d.setup == nil {
+		return nil
+	}
 	return d.setup(d, oc)
 }
 

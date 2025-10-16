@@ -3,6 +3,7 @@ package objects
 import (
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/goccy/go-json"
 )
@@ -24,11 +25,33 @@ const VIDEO_CHANNEL_SEEK_STATE_PLAYING = "playing"
 const VIDEO_CHANNEL_SEEK_STATE_SEEKING = "seeking"
 const VIDEO_CHANNEL_SEEK_STATE_VIDEO_ENGINE_NOT_AVAILABLE = "video_engine_not_available"
 
+type PTZCommand string
+
+const (
+	PTZ_COMMAND_UP         PTZCommand = "up"
+	PTZ_COMMAND_DOWN       PTZCommand = "down"
+	PTZ_COMMAND_LEFT       PTZCommand = "left"
+	PTZ_COMMAND_RIGHT      PTZCommand = "right"
+	PTZ_COMMAND_UP_LEFT    PTZCommand = "up_left"
+	PTZ_COMMAND_UP_RIGHT   PTZCommand = "up_right"
+	PTZ_COMMAND_DOWN_LEFT  PTZCommand = "down_left"
+	PTZ_COMMAND_DOWN_RIGHT PTZCommand = "down_right"
+	PTZ_COMMAND_ZOOM_IN    PTZCommand = "zoom_in"
+	PTZ_COMMAND_ZOOM_OUT   PTZCommand = "zoom_out"
+	PTZ_COMMAND_STOP       PTZCommand = "stop"
+	PTZ_COMMAND_FOCUS_NEAR PTZCommand = "focus_near"
+	PTZ_COMMAND_FOCUS_FAR  PTZCommand = "focus_far"
+	PTZ_COMMAND_IRIS_OPEN  PTZCommand = "iris_open"
+	PTZ_COMMAND_IRIS_CLOSE PTZCommand = "iris_close"
+)
+
+const PTZ_MAX_SPEED = 10
+const PTZ_MIN_SPEED = 1
+
 type VideoChannelActionPtzControlPayload struct {
-	Pan      int  `json:"pan"`
-	Tilt     int  `json:"tilt"`
-	Zoom     int  `json:"zoom"`
-	Relative bool `json:"relative"`
+	Command  PTZCommand `json:"command"` //up, down, left, right, zoom_in, zoom_out, stop
+	Value    int        `json:"value"`   //speed value from 1 to 10
+	Relative bool       `json:"relative"`
 }
 
 type VideoClipActionPayload struct {
@@ -45,6 +68,70 @@ type SnapshotActionPayload struct {
 
 type VideoChannelActionPtzControlPayloadDirection string
 
+// Metadata representa el mensaje completo de metadatos
+type AnalyticAnnotations struct {
+	Timestamp time.Time `json:"timestamp"`
+	Width     int       `json:"width"`
+	Height    int       `json:"height"`
+
+	Objects     []Object     `json:"objects,omitempty"`
+	Annotations []Annotation `json:"annotations,omitempty"`
+}
+
+// Object representa un objeto detectado
+type Object struct {
+	ID         string  `json:"id"`
+	Type       string  `json:"type"` // person, vehicle, face, etc.
+	Confidence float64 `json:"confidence"`
+
+	// Bounding box
+	X      int `json:"x"`
+	Y      int `json:"y"`
+	Width  int `json:"width"`
+	Height int `json:"height"`
+
+	// Atributos opcionales
+	Attributes map[string]string `json:"attributes,omitempty"`
+	TrackID    string            `json:"track_id,omitempty"`
+
+	// Estilo de dibujo
+	Color     string `json:"color,omitempty"`      // Color del borde
+	FillColor string `json:"fill_color,omitempty"` // Color de relleno
+	LineWidth int    `json:"line_width,omitempty"`
+}
+
+// Annotation representa una figura o texto para dibujar
+type Annotation struct {
+	Type string `json:"type"` // rectangle, polygon, line, circle, text
+
+	// Para todas las figuras
+	Points []Point `json:"points,omitempty"` // Para polygon, line
+
+	// Para rectangle y circle
+	X      int `json:"x,omitempty"`
+	Y      int `json:"y,omitempty"`
+	Width  int `json:"width,omitempty"`
+	Height int `json:"height,omitempty"`
+	Radius int `json:"radius,omitempty"` // Para circle
+
+	// Para text
+	Text     string `json:"text,omitempty"`
+	FontSize int    `json:"font_size,omitempty"`
+
+	// Estilo
+	Color     string `json:"color,omitempty"`
+	FillColor string `json:"fill_color,omitempty"`
+	LineWidth int    `json:"line_width,omitempty"`
+
+	Label string `json:"label,omitempty"`
+}
+
+// Point representa un punto 2D
+type Point struct {
+	X int `json:"x"`
+	Y int `json:"y"`
+}
+
 type VideoChannelObject interface {
 	RegistrableObject
 	// stream helpers
@@ -55,6 +142,7 @@ type VideoChannelObject interface {
 	SetModeIdle() error
 	SetModeStreaming() error
 	SetModeUnknown() error
+	SetAnalyticsMetadata(metadata AnalyticAnnotations) error
 }
 
 type SeekPayload struct {
@@ -83,6 +171,15 @@ type videoChannelObject struct {
 	videoclipFn func(VideoChannelObject, ObjectController, VideoClipActionPayload) (filename string, err error)
 	ptzFn       func(VideoChannelObject, ObjectController, VideoChannelActionPtzControlPayload) error
 	seekFn      func(VideoChannelObject, ObjectController, SeekPayload) error
+}
+
+// SetAnalyticsMetadata implements VideoChannelObject.
+func (v *videoChannelObject) SetAnalyticsMetadata(metadata AnalyticAnnotations) error {
+	json, err := json.Marshal(metadata)
+	if err != nil {
+		return err
+	}
+	return v.controller.UpdateStateAttributes(v.GetMetadata().ObjectID, map[string]string{"analytics_metadata": string(json)})
 }
 
 // UpdateStateAttributes implements VideoChannelObject.
