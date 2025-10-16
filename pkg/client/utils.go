@@ -51,5 +51,26 @@ func (n *NetsocsDriverClient) RTSPToStreamID(rtsp string, streamID string, opts 
 	}
 
 	return videoEngineDefaultId, nil
+}
 
+func (n *NetsocsDriverClient) HTTPToStreamID(httpUrl string, streamID string) (videoEngine string, err error) {
+	videoEngineDefaultId := "netsocs_native.video_engine.default"
+	if n.videoEngineID != "" {
+		videoEngineDefaultId = n.videoEngineID
+	}
+	videoEngineDefaultDomain := "netsocs_native.video_engine"
+	req := rtsp2StreamIdRequest{}
+	req.ObjectID = []string{videoEngineDefaultId}
+	req.Payload.RtspSource = httpUrl
+	req.Payload.StreamID = streamID
+	resp, err := resty.New().R().SetBody(req).Post(fmt.Sprintf("%s/objects/actions/executions/%s/http_to_stream_id", n.driverHubHost, videoEngineDefaultDomain))
+
+	if err != nil {
+		return "", err
+	}
+
+	if resp.StatusCode() >= 400 {
+		return "", fmt.Errorf("error converting http to stream id: %s", resp.String())
+	}
+	return videoEngineDefaultId, nil
 }
