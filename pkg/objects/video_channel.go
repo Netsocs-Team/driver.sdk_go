@@ -16,6 +16,7 @@ const VIDEO_CHANNEL_STATE_UNKNOWN = "video_channel.state.unknown"
 const VIDEO_CHANNEL_ACTION_SNAPSHOT = "video_channel.action.snapshot"
 const VIDEO_CHANNEL_ACTION_VIDEOCLIP = "video_channel.action.videoclip"
 const VIDEO_CHANNEL_ACTION_PTZ_CONTROL = "video_channel.action.ptz_control"
+const VIDEO_CHANNEL_ACTION_REQUEST_DOLYNK_STREAM_URL = "video_channel.action.request_dolynk_stream_url"
 const VIDEO_CHANNEL_ACTION_SEEK = "video_channel.action.seek" //seek to a specific timestamp to playback id
 
 // seek states
@@ -167,10 +168,11 @@ type videoChannelObject struct {
 	ptz           bool
 	videoEngineId string
 	// actions functions
-	snapshotFn  func(VideoChannelObject, ObjectController, SnapshotActionPayload) (filename string, err error)
-	videoclipFn func(VideoChannelObject, ObjectController, VideoClipActionPayload) (filename string, err error)
-	ptzFn       func(VideoChannelObject, ObjectController, VideoChannelActionPtzControlPayload) error
-	seekFn      func(VideoChannelObject, ObjectController, SeekPayload) error
+	snapshotFn               func(VideoChannelObject, ObjectController, SnapshotActionPayload) (filename string, err error)
+	videoclipFn              func(VideoChannelObject, ObjectController, VideoClipActionPayload) (filename string, err error)
+	ptzFn                    func(VideoChannelObject, ObjectController, VideoChannelActionPtzControlPayload) error
+	seekFn                   func(VideoChannelObject, ObjectController, SeekPayload) error
+	requestDolynkStreamURLFn func(VideoChannelObject, ObjectController, RequestDolynkStreamURLPayload) error
 }
 
 // SetAnalyticsMetadata implements VideoChannelObject.
@@ -234,6 +236,7 @@ func (v *videoChannelObject) GetAvailableActions() []ObjectAction {
 		{Action: VIDEO_CHANNEL_ACTION_PTZ_CONTROL, Domain: v.metadata.Domain},
 		{Action: VIDEO_CHANNEL_ACTION_VIDEOCLIP, Domain: v.metadata.Domain},
 		{Action: VIDEO_CHANNEL_ACTION_SEEK, Domain: v.metadata.Domain},
+		{Action: VIDEO_CHANNEL_ACTION_REQUEST_DOLYNK_STREAM_URL, Domain: v.metadata.Domain},
 	}
 }
 
@@ -293,6 +296,13 @@ func (v *videoChannelObject) RunAction(id, action string, payload []byte) (map[s
 			return nil, err
 		}
 		return nil, v.seekFn(v, v.controller, p)
+
+	case VIDEO_CHANNEL_ACTION_REQUEST_DOLYNK_STREAM_URL:
+		var p RequestDolynkStreamURLPayload
+		if err := json.Unmarshal(payload, &p); err != nil {
+			return nil, err
+		}
+		return nil, v.requestDolynkStreamURLFn(v, v.controller, p)
 	}
 
 	return nil, fmt.Errorf("action %s not found", action)
@@ -317,6 +327,9 @@ func (v *videoChannelObject) Setup(oc ObjectController) error {
 
 }
 
+type RequestDolynkStreamURLPayload struct {
+}
+
 type NewVideoChannelObjectProps struct {
 	Metadata ObjectMetadata
 
@@ -326,24 +339,26 @@ type NewVideoChannelObjectProps struct {
 	PTZ         bool
 	Recording   bool
 
-	SetupFn     func(VideoChannelObject, ObjectController) error
-	SnapshotFn  func(VideoChannelObject, ObjectController, SnapshotActionPayload) (string, error)
-	VideoclipFn func(VideoChannelObject, ObjectController, VideoClipActionPayload) (string, error)
-	PtzFn       func(VideoChannelObject, ObjectController, VideoChannelActionPtzControlPayload) error
-	SeekFn      func(VideoChannelObject, ObjectController, SeekPayload) error
+	SetupFn                func(VideoChannelObject, ObjectController) error
+	SnapshotFn             func(VideoChannelObject, ObjectController, SnapshotActionPayload) (string, error)
+	VideoclipFn            func(VideoChannelObject, ObjectController, VideoClipActionPayload) (string, error)
+	PtzFn                  func(VideoChannelObject, ObjectController, VideoChannelActionPtzControlPayload) error
+	SeekFn                 func(VideoChannelObject, ObjectController, SeekPayload) error
+	RequestDolynkStreamURL func(VideoChannelObject, ObjectController, RequestDolynkStreamURLPayload) error
 }
 
 func NewVideoChannelObject(props NewVideoChannelObjectProps) VideoChannelObject {
 	return &videoChannelObject{
-		metadata:      props.Metadata,
-		streamId:      props.StreamID,
-		subStreamId:   props.SubstreamID,
-		ptz:           props.PTZ,
-		videoEngineId: props.VideoEngine,
-		setupFn:       props.SetupFn,
-		snapshotFn:    props.SnapshotFn,
-		videoclipFn:   props.VideoclipFn,
-		ptzFn:         props.PtzFn,
-		seekFn:        props.SeekFn,
+		metadata:                 props.Metadata,
+		streamId:                 props.StreamID,
+		subStreamId:              props.SubstreamID,
+		ptz:                      props.PTZ,
+		videoEngineId:            props.VideoEngine,
+		setupFn:                  props.SetupFn,
+		snapshotFn:               props.SnapshotFn,
+		videoclipFn:              props.VideoclipFn,
+		ptzFn:                    props.PtzFn,
+		seekFn:                   props.SeekFn,
+		requestDolynkStreamURLFn: props.RequestDolynkStreamURL,
 	}
 }
