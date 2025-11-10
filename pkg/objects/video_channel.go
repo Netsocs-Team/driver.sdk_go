@@ -172,7 +172,7 @@ type videoChannelObject struct {
 	videoclipFn              func(VideoChannelObject, ObjectController, VideoClipActionPayload) (filename string, err error)
 	ptzFn                    func(VideoChannelObject, ObjectController, VideoChannelActionPtzControlPayload) error
 	seekFn                   func(VideoChannelObject, ObjectController, SeekPayload) error
-	requestDolynkStreamURLFn func(VideoChannelObject, ObjectController, RequestDolynkStreamURLPayload) error
+	requestDolynkStreamURLFn func(VideoChannelObject, ObjectController, RequestDolynkStreamURLPayload) (RequestDolynkStreamURLResponse, error)
 }
 
 // SetAnalyticsMetadata implements VideoChannelObject.
@@ -302,7 +302,20 @@ func (v *videoChannelObject) RunAction(id, action string, payload []byte) (map[s
 		if err := json.Unmarshal(payload, &p); err != nil {
 			return nil, err
 		}
-		return nil, v.requestDolynkStreamURLFn(v, v.controller, p)
+		response, err := v.requestDolynkStreamURLFn(v, v.controller, p)
+		if err != nil {
+			return nil, err
+		}
+		rawJson, err := json.Marshal(response)
+		if err != nil {
+			return nil, err
+		}
+		mapJson := map[string]string{}
+		err = json.Unmarshal(rawJson, &mapJson)
+		if err != nil {
+			return nil, err
+		}
+		return mapJson, nil
 	}
 
 	return nil, fmt.Errorf("action %s not found", action)
@@ -329,6 +342,9 @@ func (v *videoChannelObject) Setup(oc ObjectController) error {
 
 type RequestDolynkStreamURLPayload struct {
 }
+type RequestDolynkStreamURLResponse struct {
+	StreamURL string `json:"stream_url"`
+}
 
 type NewVideoChannelObjectProps struct {
 	Metadata ObjectMetadata
@@ -344,7 +360,7 @@ type NewVideoChannelObjectProps struct {
 	VideoclipFn            func(VideoChannelObject, ObjectController, VideoClipActionPayload) (string, error)
 	PtzFn                  func(VideoChannelObject, ObjectController, VideoChannelActionPtzControlPayload) error
 	SeekFn                 func(VideoChannelObject, ObjectController, SeekPayload) error
-	RequestDolynkStreamURL func(VideoChannelObject, ObjectController, RequestDolynkStreamURLPayload) error
+	RequestDolynkStreamURL func(VideoChannelObject, ObjectController, RequestDolynkStreamURLPayload) (RequestDolynkStreamURLResponse, error)
 }
 
 func NewVideoChannelObject(props NewVideoChannelObjectProps) VideoChannelObject {
