@@ -342,14 +342,14 @@ func (v *videoChannelObject) Setup(oc ObjectController) error {
 
 type RequestDolynkStreamURLPayload struct {
 	BusinessType   string `json:"businessType"`
-	EncryptMode    int8   `json:"encryptMode"`
+	EncryptMode    int    `json:"encryptMode"`
 	BeginTime      string `json:"beginTime"`
 	EndTime        string `json:"endTime"`
-	StreamType     int8   `json:"streamType"`
+	StreamType     int    `json:"streamType"`
 	ProtoType      string `json:"protoType"`
 	DeviceType     string `json:"deviceType"`
-	AssistStream   int8   `json:"assistStream"`
-	RecordPlayType int8   `json:"recordPlayType"`
+	AssistStream   int    `json:"assistStream"`
+	RecordPlayType int    `json:"recordPlayType"`
 	RecordFileName string `json:"recordFileName"`
 }
 type RequestDolynkStreamURLResponse struct {
