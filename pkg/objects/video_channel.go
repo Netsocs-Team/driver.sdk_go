@@ -341,17 +341,77 @@ func (v *videoChannelObject) Setup(oc ObjectController) error {
 }
 
 type RequestDolynkStreamURLPayload struct {
-	BusinessType   string `json:"businessType"`
-	EncryptMode    int    `json:"encryptMode"`
-	BeginTime      string `json:"beginTime"`
-	EndTime        string `json:"endTime"`
-	StreamType     int    `json:"streamType"`
-	ProtoType      string `json:"protoType"`
-	DeviceType     string `json:"deviceType"`
-	AssistStream   int    `json:"assistStream"`
-	RecordPlayType int    `json:"recordPlayType"`
-	RecordFileName string `json:"recordFileName"`
+	// DeviceID es el número de serie del dispositivo (requerido)
+	DeviceID string `json:"deviceId" binding:"required"`
+
+	// DevCode es la contraseña del dispositivo (opcional)
+	// Nota: En la herramienta de depuración de API, se usa la contraseña original sin cifrar.
+	// Ver código de ejemplo para el cifrado de contraseña del dispositivo.
+	DevCode string `json:"devCode,omitempty"`
+
+	// ChannelID es el número del canal (requerido)
+	ChannelID int `json:"channelId" binding:"required"`
+
+	// BusinessType es el tipo de servicio (requerido)
+	// Valores válidos:
+	//   - "Real": Vista en vivo
+	//   - "talk": Conversación de voz
+	//   - "localRecord": Grabación de video local
+	//   - "cloudRecord": Grabación de video en la nube
+	BusinessType string `json:"businessType" binding:"required"`
+
+	// EncryptMode es el modo de cifrado (requerido)
+	// Valores:
+	//   - 0: No cifrar
+	//   - 1: Cifrar
+	EncryptMode int `json:"encryptMode" binding:"required"`
+
+	// BeginTime es la hora de inicio de la reproducción de video (opcional)
+	// Requerido cuando el tipo de negocio es grabación de video.
+	// Formato: yyyy-MM-dd HH:mm:ss
+	BeginTime string `json:"beginTime,omitempty"`
+
+	// EndTime es la hora de finalización de la reproducción de video (opcional)
+	// Requerido cuando el tipo de negocio es grabación de video.
+	// Formato: yyyy-MM-dd HH:mm:ss
+	EndTime string `json:"endTime,omitempty"`
+
+	// StreamType es el tipo de stream (opcional)
+	// Valores:
+	//   - 0: Stream principal
+	//   - 1: Sub stream
+	StreamType *int `json:"streamType,omitempty"`
+
+	// ProtoType es el tipo de protocolo (requerido)
+	// Valores válidos:
+	//   - "rtsp"
+	//   - "rtsv"
+	ProtoType string `json:"protoType" binding:"required"`
+
+	// DeviceType es requerido para conversación de voz (opcional en otros casos)
+	// Valores:
+	//   - "Channel": Dispositivo multicanal
+	//   - "device": Dispositivo de un solo canal
+	DeviceType string `json:"deviceType,omitempty"`
+
+	// AssistStream es el marco inteligente (la resolución varía con los cambios del dispositivo) (opcional)
+	// Valores:
+	//   - 0: Deshabilitado
+	//   - 1: Habilitado
+	AssistStream *int `json:"assistStream,omitempty"`
+
+	// RecordPlayType es el tipo de reproducción de video local (opcional)
+	// Solo tiene efecto cuando businessType es localRecord.
+	// Valores:
+	//   - 0: Reproducir por tiempo
+	//   - 1: Reproducir por nombre de archivo
+	RecordPlayType *int `json:"recordPlayType,omitempty"`
+
+	// RecordFileName es el nombre del archivo de video local (opcional)
+	// Este parámetro es requerido cuando recordPlayType es 1.
+	RecordFileName string `json:"recordFileName,omitempty"`
 }
+
 type RequestDolynkStreamURLResponse struct {
 	StreamURL string `json:"stream_url"`
 }
