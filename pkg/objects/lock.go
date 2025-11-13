@@ -24,6 +24,7 @@ type lockObject struct {
 	unlockMethod func(this LockObject, controller ObjectController) (map[string]string, error)
 	setup        func(this LockObject, controller ObjectController) error
 	controller   ObjectController
+	rebootMethod func(this LockObject, controller ObjectController) error
 }
 
 // GetAvailableActions implements LockObject.
@@ -101,6 +102,7 @@ type NewLockObjectParams struct {
 	LockMethod   func(this LockObject, controller ObjectController) (map[string]string, error)
 	UnlockMethod func(this LockObject, controller ObjectController) (map[string]string, error)
 	Setup        func(this LockObject, controller ObjectController) error
+	RebootMethod func(this LockObject, controller ObjectController) error
 }
 
 func NewLockObject(params NewLockObjectParams) LockObject {
@@ -109,5 +111,6 @@ func NewLockObject(params NewLockObjectParams) LockObject {
 		lockMethod:   params.LockMethod,
 		unlockMethod: params.UnlockMethod,
 		setup:        params.Setup,
+		rebootMethod: params.RebootMethod,
 	}
 }
