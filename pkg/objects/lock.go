@@ -13,6 +13,7 @@ const LOCK_STATE_UNKNOWN = "unknown"
 
 const LOCK_ACTION_LOCK = "lock"
 const LOCK_ACTION_UNLOCK = "unlock"
+const LOCK_ACTION_REBOOT = "reboot"
 
 type LockObject interface {
 	RegistrableObject
@@ -24,7 +25,7 @@ type lockObject struct {
 	unlockMethod func(this LockObject, controller ObjectController) (map[string]string, error)
 	setup        func(this LockObject, controller ObjectController) error
 	controller   ObjectController
-	rebootMethod func(this LockObject, controller ObjectController) error
+	rebootMethod func(this LockObject, controller ObjectController) (map[string]string, error)
 }
 
 // GetAvailableActions implements LockObject.
@@ -74,7 +75,13 @@ func (d *lockObject) RunAction(id string, action string, payload []byte) (map[st
 			return nil, errors.New("unlock method is not set")
 		}
 		return d.unlockMethod(d, d.controller)
+	case LOCK_ACTION_REBOOT:
+		if d.rebootMethod == nil {
+			return nil, errors.New("reboot method is not set")
+		}
+		return d.rebootMethod(d, d.controller)
 	}
+
 	return nil, nil
 }
 
@@ -102,7 +109,7 @@ type NewLockObjectParams struct {
 	LockMethod   func(this LockObject, controller ObjectController) (map[string]string, error)
 	UnlockMethod func(this LockObject, controller ObjectController) (map[string]string, error)
 	Setup        func(this LockObject, controller ObjectController) error
-	RebootMethod func(this LockObject, controller ObjectController) error
+	RebootMethod func(this LockObject, controller ObjectController) (map[string]string, error)
 }
 
 func NewLockObject(params NewLockObjectParams) LockObject {
