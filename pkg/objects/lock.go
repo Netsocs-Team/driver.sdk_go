@@ -39,6 +39,10 @@ func (d *lockObject) GetAvailableActions() []ObjectAction {
 			Action: LOCK_ACTION_UNLOCK,
 			Domain: d.metadata.Domain,
 		},
+		{
+			Action: LOCK_ACTION_REBOOT,
+			Domain: d.metadata.Domain,
+		},
 	}
 }
 
