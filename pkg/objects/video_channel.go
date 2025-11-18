@@ -171,7 +171,7 @@ type videoChannelObject struct {
 	snapshotFn               func(VideoChannelObject, ObjectController, SnapshotActionPayload) (filename string, err error)
 	videoclipFn              func(VideoChannelObject, ObjectController, VideoClipActionPayload) (filename string, err error)
 	ptzFn                    func(VideoChannelObject, ObjectController, VideoChannelActionPtzControlPayload) error
-	seekFn                   func(VideoChannelObject, ObjectController, SeekPayload) error
+	seekFn                   func(VideoChannelObject, ObjectController, SeekPayload) (SeekResult, error)
 	requestDolynkStreamURLFn func(VideoChannelObject, ObjectController, RequestDolynkStreamURLPayload) (RequestDolynkStreamURLResponse, error)
 }
 
@@ -295,7 +295,8 @@ func (v *videoChannelObject) RunAction(id, action string, payload []byte) (map[s
 		if err := json.Unmarshal(payload, &p); err != nil {
 			return nil, err
 		}
-		return nil, v.seekFn(v, v.controller, p)
+		result, err := v.seekFn(v, v.controller, p)
+		return map[string]string{"error": strconv.FormatBool(result.Error), "message": result.Message}, err
 
 	case VIDEO_CHANNEL_ACTION_REQUEST_DOLYNK_STREAM_URL:
 		var p RequestDolynkStreamURLPayload
@@ -429,8 +430,13 @@ type NewVideoChannelObjectProps struct {
 	SnapshotFn             func(VideoChannelObject, ObjectController, SnapshotActionPayload) (string, error)
 	VideoclipFn            func(VideoChannelObject, ObjectController, VideoClipActionPayload) (string, error)
 	PtzFn                  func(VideoChannelObject, ObjectController, VideoChannelActionPtzControlPayload) error
-	SeekFn                 func(VideoChannelObject, ObjectController, SeekPayload) error
+	SeekFn                 func(VideoChannelObject, ObjectController, SeekPayload) (SeekResult, error)
 	RequestDolynkStreamURL func(VideoChannelObject, ObjectController, RequestDolynkStreamURLPayload) (RequestDolynkStreamURLResponse, error)
+}
+
+type SeekResult struct {
+	Error   bool   `json:"error"`
+	Message string `json:"message"`
 }
 
 func NewVideoChannelObject(props NewVideoChannelObjectProps) VideoChannelObject {
