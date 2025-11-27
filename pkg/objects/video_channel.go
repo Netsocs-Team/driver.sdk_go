@@ -17,6 +17,7 @@ const VIDEO_CHANNEL_ACTION_SNAPSHOT = "video_channel.action.snapshot"
 const VIDEO_CHANNEL_ACTION_VIDEOCLIP = "video_channel.action.videoclip"
 const VIDEO_CHANNEL_ACTION_PTZ_CONTROL = "video_channel.action.ptz_control"
 const VIDEO_CHANNEL_ACTION_REQUEST_DOLYNK_STREAM_URL = "video_channel.action.request_dolynk_stream_url"
+const VIDEO_CHANNEL_ACTION_REQUEST_DAHUA_PLAYBACK_MEDIA_FILES = "video_channel.action.request_dahua_playback_media_files"
 const VIDEO_CHANNEL_ACTION_SEEK = "video_channel.action.seek" //seek to a specific timestamp to playback id
 
 // seek states
@@ -239,6 +240,7 @@ func (v *videoChannelObject) GetAvailableActions() []ObjectAction {
 		{Action: VIDEO_CHANNEL_ACTION_VIDEOCLIP, Domain: v.metadata.Domain},
 		{Action: VIDEO_CHANNEL_ACTION_SEEK, Domain: v.metadata.Domain},
 		{Action: VIDEO_CHANNEL_ACTION_REQUEST_DOLYNK_STREAM_URL, Domain: v.metadata.Domain},
+		{Action: VIDEO_CHANNEL_ACTION_REQUEST_DAHUA_PLAYBACK_MEDIA_FILES, Domain: v.metadata.Domain},
 	}
 }
 
@@ -306,6 +308,26 @@ func (v *videoChannelObject) RunAction(id, action string, payload []byte) (map[s
 			return nil, err
 		}
 		response, err := v.requestDolynkStreamURLFn(v, v.controller, p)
+		if err != nil {
+			return nil, err
+		}
+		rawJson, err := json.Marshal(response)
+		if err != nil {
+			return nil, err
+		}
+		mapJson := map[string]string{}
+		err = json.Unmarshal(rawJson, &mapJson)
+		if err != nil {
+			return nil, err
+		}
+		return mapJson, nil
+
+	case VIDEO_CHANNEL_ACTION_REQUEST_DAHUA_PLAYBACK_MEDIA_FILES:
+		var p RequestDahuaPlaybackMediaFilesPayload
+		if err := json.Unmarshal(payload, &p); err != nil {
+			return nil, err
+		}
+		response, err := v.requestDahuaPlaybackMediaFilesFn(v, v.controller, p)
 		if err != nil {
 			return nil, err
 		}
