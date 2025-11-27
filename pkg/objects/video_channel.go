@@ -29,6 +29,16 @@ const VIDEO_CHANNEL_SEEK_STATE_VIDEO_ENGINE_NOT_AVAILABLE = "video_engine_not_av
 
 type PTZCommand string
 
+type MediaFileItem struct {
+	Channel   string
+	StartTime time.Time
+	EndTime   time.Time
+	Type      string
+	FilePath  string
+	Length    string
+	Duration  string
+}
+
 const (
 	PTZ_COMMAND_UP         PTZCommand = "up"
 	PTZ_COMMAND_DOWN       PTZCommand = "down"
@@ -464,7 +474,7 @@ type RequestDahuaPlaybackMediaFilesPayload struct {
 	EndTime   string `json:"end_time"`
 }
 type RequestDahuaPlaybackMediaFilesResponse struct {
-	MediaFiles []string `json:"media_files"`
+	MediaFiles []MediaFileItem `json:"media_files"`
 }
 
 type SeekResult struct {
