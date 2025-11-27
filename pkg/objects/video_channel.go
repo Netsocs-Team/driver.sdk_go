@@ -168,11 +168,12 @@ type videoChannelObject struct {
 	ptz           bool
 	videoEngineId string
 	// actions functions
-	snapshotFn               func(VideoChannelObject, ObjectController, SnapshotActionPayload) (filename string, err error)
-	videoclipFn              func(VideoChannelObject, ObjectController, VideoClipActionPayload) (filename string, err error)
-	ptzFn                    func(VideoChannelObject, ObjectController, VideoChannelActionPtzControlPayload) error
-	seekFn                   func(VideoChannelObject, ObjectController, SeekPayload) (SeekResult, error)
-	requestDolynkStreamURLFn func(VideoChannelObject, ObjectController, RequestDolynkStreamURLPayload) (RequestDolynkStreamURLResponse, error)
+	snapshotFn                       func(VideoChannelObject, ObjectController, SnapshotActionPayload) (filename string, err error)
+	videoclipFn                      func(VideoChannelObject, ObjectController, VideoClipActionPayload) (filename string, err error)
+	ptzFn                            func(VideoChannelObject, ObjectController, VideoChannelActionPtzControlPayload) error
+	seekFn                           func(VideoChannelObject, ObjectController, SeekPayload) (SeekResult, error)
+	requestDolynkStreamURLFn         func(VideoChannelObject, ObjectController, RequestDolynkStreamURLPayload) (RequestDolynkStreamURLResponse, error)
+	requestDahuaPlaybackMediaFilesFn func(VideoChannelObject, ObjectController, RequestDahuaPlaybackMediaFilesPayload) (RequestDahuaPlaybackMediaFilesResponse, error)
 }
 
 // SetAnalyticsMetadata implements VideoChannelObject.
@@ -426,12 +427,21 @@ type NewVideoChannelObjectProps struct {
 	PTZ         bool
 	Recording   bool
 
-	SetupFn                func(VideoChannelObject, ObjectController) error
-	SnapshotFn             func(VideoChannelObject, ObjectController, SnapshotActionPayload) (string, error)
-	VideoclipFn            func(VideoChannelObject, ObjectController, VideoClipActionPayload) (string, error)
-	PtzFn                  func(VideoChannelObject, ObjectController, VideoChannelActionPtzControlPayload) error
-	SeekFn                 func(VideoChannelObject, ObjectController, SeekPayload) (SeekResult, error)
-	RequestDolynkStreamURL func(VideoChannelObject, ObjectController, RequestDolynkStreamURLPayload) (RequestDolynkStreamURLResponse, error)
+	SetupFn                        func(VideoChannelObject, ObjectController) error
+	SnapshotFn                     func(VideoChannelObject, ObjectController, SnapshotActionPayload) (string, error)
+	VideoclipFn                    func(VideoChannelObject, ObjectController, VideoClipActionPayload) (string, error)
+	PtzFn                          func(VideoChannelObject, ObjectController, VideoChannelActionPtzControlPayload) error
+	SeekFn                         func(VideoChannelObject, ObjectController, SeekPayload) (SeekResult, error)
+	RequestDolynkStreamURL         func(VideoChannelObject, ObjectController, RequestDolynkStreamURLPayload) (RequestDolynkStreamURLResponse, error)
+	RequestDahuaPlaybackMediaFiles func(VideoChannelObject, ObjectController, RequestDahuaPlaybackMediaFilesPayload) (RequestDahuaPlaybackMediaFilesResponse, error)
+}
+
+type RequestDahuaPlaybackMediaFilesPayload struct {
+	StartTime string `json:"start_time"`
+	EndTime   string `json:"end_time"`
+}
+type RequestDahuaPlaybackMediaFilesResponse struct {
+	MediaFiles []string `json:"media_files"`
 }
 
 type SeekResult struct {
@@ -441,16 +451,17 @@ type SeekResult struct {
 
 func NewVideoChannelObject(props NewVideoChannelObjectProps) VideoChannelObject {
 	return &videoChannelObject{
-		metadata:                 props.Metadata,
-		streamId:                 props.StreamID,
-		subStreamId:              props.SubstreamID,
-		ptz:                      props.PTZ,
-		videoEngineId:            props.VideoEngine,
-		setupFn:                  props.SetupFn,
-		snapshotFn:               props.SnapshotFn,
-		videoclipFn:              props.VideoclipFn,
-		ptzFn:                    props.PtzFn,
-		seekFn:                   props.SeekFn,
-		requestDolynkStreamURLFn: props.RequestDolynkStreamURL,
+		metadata:                         props.Metadata,
+		streamId:                         props.StreamID,
+		subStreamId:                      props.SubstreamID,
+		ptz:                              props.PTZ,
+		videoEngineId:                    props.VideoEngine,
+		setupFn:                          props.SetupFn,
+		snapshotFn:                       props.SnapshotFn,
+		videoclipFn:                      props.VideoclipFn,
+		ptzFn:                            props.PtzFn,
+		seekFn:                           props.SeekFn,
+		requestDolynkStreamURLFn:         props.RequestDolynkStreamURL,
+		requestDahuaPlaybackMediaFilesFn: props.RequestDahuaPlaybackMediaFiles,
 	}
 }
