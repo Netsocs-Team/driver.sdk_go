@@ -341,14 +341,14 @@ func (v *videoChannelObject) RunAction(id, action string, payload []byte) (map[s
 		if err != nil {
 			return nil, err
 		}
-		rawJson, err := json.Marshal(response)
-		if err != nil {
-			return nil, err
-		}
+
 		mapJson := map[string]string{}
-		err = json.Unmarshal(rawJson, &mapJson)
-		if err != nil {
-			return nil, err
+		for i, mediaFile := range response.MediaFiles {
+			mediaFileJson, err := json.Marshal(mediaFile)
+			if err != nil {
+				return nil, err
+			}
+			mapJson[strconv.Itoa(i)] = string(mediaFileJson)
 		}
 		return mapJson, nil
 	}
