@@ -19,6 +19,7 @@ const VIDEO_CHANNEL_ACTION_PTZ_CONTROL = "video_channel.action.ptz_control"
 const VIDEO_CHANNEL_ACTION_REQUEST_DOLYNK_STREAM_URL = "video_channel.action.request_dolynk_stream_url"
 const VIDEO_CHANNEL_ACTION_REQUEST_DAHUA_PLAYBACK_MEDIA_FILES = "video_channel.action.request_dahua_playback_media_files"
 const VIDEO_CHANNEL_ACTION_SEEK = "video_channel.action.seek" //seek to a specific timestamp to playback id
+const VIDEO_CHANNEL_ACTION_GET_RECORDING_SEGMENTS = "video_channel.action.get_recording_segments"
 
 // seek states
 const VIDEO_CHANNEL_SEEK_STATE_MEDIA_NOT_FOUND = "media_not_found"
@@ -28,6 +29,24 @@ const VIDEO_CHANNEL_SEEK_STATE_SEEKING = "seeking"
 const VIDEO_CHANNEL_SEEK_STATE_VIDEO_ENGINE_NOT_AVAILABLE = "video_engine_not_available"
 
 type PTZCommand string
+
+type GetRecordingSegmentsPayload struct {
+	StartTime string `json:"start_time"`
+	EndTime   string `json:"end_time"`
+}
+
+type GetRecordingSegmentsResponse struct {
+	Segments []RecordingSegmentItem `json:"segments"`
+	Error    bool                   `json:"error"`
+	Message  string                 `json:"message"`
+}
+
+type RecordingSegmentItem struct {
+	StartTime string `json:"start_time"`
+	EndTime   string `json:"end_time"`
+	TypeLabel string `json:"type_label"`
+	Color     string `json:"color"`
+}
 
 type MediaFileItem struct {
 	Channel   string
@@ -186,6 +205,7 @@ type videoChannelObject struct {
 	seekFn                           func(VideoChannelObject, ObjectController, SeekPayload) (SeekResult, error)
 	requestDolynkStreamURLFn         func(VideoChannelObject, ObjectController, RequestDolynkStreamURLPayload) (RequestDolynkStreamURLResponse, error)
 	requestDahuaPlaybackMediaFilesFn func(VideoChannelObject, ObjectController, RequestDahuaPlaybackMediaFilesPayload) (RequestDahuaPlaybackMediaFilesResponse, error)
+	getRecordingSegmentsFn           func(VideoChannelObject, ObjectController, GetRecordingSegmentsPayload) (GetRecordingSegmentsResponse, error)
 }
 
 // SetAnalyticsMetadata implements VideoChannelObject.
@@ -251,6 +271,7 @@ func (v *videoChannelObject) GetAvailableActions() []ObjectAction {
 		{Action: VIDEO_CHANNEL_ACTION_SEEK, Domain: v.metadata.Domain},
 		{Action: VIDEO_CHANNEL_ACTION_REQUEST_DOLYNK_STREAM_URL, Domain: v.metadata.Domain},
 		{Action: VIDEO_CHANNEL_ACTION_REQUEST_DAHUA_PLAYBACK_MEDIA_FILES, Domain: v.metadata.Domain},
+		{Action: VIDEO_CHANNEL_ACTION_GET_RECORDING_SEGMENTS, Domain: v.metadata.Domain},
 	}
 }
 
@@ -349,6 +370,26 @@ func (v *videoChannelObject) RunAction(id, action string, payload []byte) (map[s
 				return nil, err
 			}
 			mapJson[strconv.Itoa(i)] = string(mediaFileJson)
+		}
+		return mapJson, nil
+
+	case VIDEO_CHANNEL_ACTION_GET_RECORDING_SEGMENTS:
+		var p GetRecordingSegmentsPayload
+		if err := json.Unmarshal(payload, &p); err != nil {
+			return nil, err
+		}
+		response, err := v.getRecordingSegmentsFn(v, v.controller, p)
+		if err != nil {
+			return nil, err
+		}
+		rawJson, err := json.Marshal(response)
+		if err != nil {
+			return nil, err
+		}
+		mapJson := map[string]string{}
+		err = json.Unmarshal(rawJson, &mapJson)
+		if err != nil {
+			return nil, err
 		}
 		return mapJson, nil
 	}
@@ -467,6 +508,7 @@ type NewVideoChannelObjectProps struct {
 	SeekFn                         func(VideoChannelObject, ObjectController, SeekPayload) (SeekResult, error)
 	RequestDolynkStreamURL         func(VideoChannelObject, ObjectController, RequestDolynkStreamURLPayload) (RequestDolynkStreamURLResponse, error)
 	RequestDahuaPlaybackMediaFiles func(VideoChannelObject, ObjectController, RequestDahuaPlaybackMediaFilesPayload) (RequestDahuaPlaybackMediaFilesResponse, error)
+	GetRecordingSegmentsFn         func(VideoChannelObject, ObjectController, GetRecordingSegmentsPayload) (GetRecordingSegmentsResponse, error)
 }
 
 type RequestDahuaPlaybackMediaFilesPayload struct {
@@ -496,5 +538,6 @@ func NewVideoChannelObject(props NewVideoChannelObjectProps) VideoChannelObject 
 		seekFn:                           props.SeekFn,
 		requestDolynkStreamURLFn:         props.RequestDolynkStreamURL,
 		requestDahuaPlaybackMediaFilesFn: props.RequestDahuaPlaybackMediaFiles,
+		getRecordingSegmentsFn:           props.GetRecordingSegmentsFn,
 	}
 }
