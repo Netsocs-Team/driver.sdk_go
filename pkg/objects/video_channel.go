@@ -386,12 +386,7 @@ func (v *videoChannelObject) RunAction(id, action string, payload []byte) (map[s
 		if err != nil {
 			return nil, err
 		}
-		mapJson := map[string]string{}
-		err = json.Unmarshal(rawJson, &mapJson)
-		if err != nil {
-			return nil, err
-		}
-		return mapJson, nil
+		return map[string]string{"data": string(rawJson)}, nil
 	}
 
 	return nil, fmt.Errorf("action %s not found", action)
