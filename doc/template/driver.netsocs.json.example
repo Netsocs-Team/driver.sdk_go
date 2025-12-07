@@ -1,0 +1,20 @@
+{
+  "driver_key": "YOUR_DRIVER_KEY_HERE",
+  "driver_hub_host": "https://platform.netsocs.com/api/netsocs/dh",
+  "token": "YOUR_AUTH_TOKEN",
+  "driver_id": "YOUR_DRIVER_ID",
+  "site_id": "YOUR_SITE_ID",
+  "name": "My Custom Driver",
+  "version": "1.0.0",
+  "driver_binary_filename": "my-driver",
+  "documentation_url": "https://github.com/yourusername/my-driver",
+  "settings_available": [
+    "actionPingDevice",
+    "getChannels",
+    "requestCreateObjects"
+  ],
+  "log_level": "info",
+  "device_models_supported_all": true,
+  "device_firmwares_supported_all": true,
+  "comments": "Replace placeholder values with your actual credentials from the Netsocs platform"
+}
