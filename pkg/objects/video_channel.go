@@ -16,7 +16,10 @@ const VIDEO_CHANNEL_STATE_UNKNOWN = "video_channel.state.unknown"
 const VIDEO_CHANNEL_ACTION_SNAPSHOT = "video_channel.action.snapshot"
 const VIDEO_CHANNEL_ACTION_VIDEOCLIP = "video_channel.action.videoclip"
 const VIDEO_CHANNEL_ACTION_PTZ_CONTROL = "video_channel.action.ptz_control"
+const VIDEO_CHANNEL_ACTION_REQUEST_DOLYNK_STREAM_URL = "video_channel.action.request_dolynk_stream_url"
+const VIDEO_CHANNEL_ACTION_REQUEST_DAHUA_PLAYBACK_MEDIA_FILES = "video_channel.action.request_dahua_playback_media_files"
 const VIDEO_CHANNEL_ACTION_SEEK = "video_channel.action.seek" //seek to a specific timestamp to playback id
+const VIDEO_CHANNEL_ACTION_GET_RECORDING_SEGMENTS = "video_channel.action.get_recording_segments"
 
 // seek states
 const VIDEO_CHANNEL_SEEK_STATE_MEDIA_NOT_FOUND = "media_not_found"
@@ -26,6 +29,34 @@ const VIDEO_CHANNEL_SEEK_STATE_SEEKING = "seeking"
 const VIDEO_CHANNEL_SEEK_STATE_VIDEO_ENGINE_NOT_AVAILABLE = "video_engine_not_available"
 
 type PTZCommand string
+
+type GetRecordingSegmentsPayload struct {
+	StartTime string `json:"start_time"`
+	EndTime   string `json:"end_time"`
+}
+
+type GetRecordingSegmentsResponse struct {
+	Segments []RecordingSegmentItem `json:"segments"`
+	Error    bool                   `json:"error"`
+	Message  string                 `json:"message"`
+}
+
+type RecordingSegmentItem struct {
+	StartTime string `json:"start_time"`
+	EndTime   string `json:"end_time"`
+	TypeLabel string `json:"type_label"`
+	Color     string `json:"color"`
+}
+
+type MediaFileItem struct {
+	Channel   string
+	StartTime time.Time
+	EndTime   time.Time
+	Type      string
+	FilePath  string
+	Length    string
+	Duration  string
+}
 
 const (
 	PTZ_COMMAND_UP         PTZCommand = "up"
@@ -43,6 +74,7 @@ const (
 	PTZ_COMMAND_FOCUS_FAR  PTZCommand = "focus_far"
 	PTZ_COMMAND_IRIS_OPEN  PTZCommand = "iris_open"
 	PTZ_COMMAND_IRIS_CLOSE PTZCommand = "iris_close"
+	PTZ_COMMAND_HOME       PTZCommand = "home"
 )
 
 const PTZ_MAX_SPEED = 10
@@ -167,10 +199,13 @@ type videoChannelObject struct {
 	ptz           bool
 	videoEngineId string
 	// actions functions
-	snapshotFn  func(VideoChannelObject, ObjectController, SnapshotActionPayload) (filename string, err error)
-	videoclipFn func(VideoChannelObject, ObjectController, VideoClipActionPayload) (filename string, err error)
-	ptzFn       func(VideoChannelObject, ObjectController, VideoChannelActionPtzControlPayload) error
-	seekFn      func(VideoChannelObject, ObjectController, SeekPayload) error
+	snapshotFn                       func(VideoChannelObject, ObjectController, SnapshotActionPayload) (filename string, err error)
+	videoclipFn                      func(VideoChannelObject, ObjectController, VideoClipActionPayload) (filename string, err error)
+	ptzFn                            func(VideoChannelObject, ObjectController, VideoChannelActionPtzControlPayload) error
+	seekFn                           func(VideoChannelObject, ObjectController, SeekPayload) (SeekResult, error)
+	requestDolynkStreamURLFn         func(VideoChannelObject, ObjectController, RequestDolynkStreamURLPayload) (RequestDolynkStreamURLResponse, error)
+	requestDahuaPlaybackMediaFilesFn func(VideoChannelObject, ObjectController, RequestDahuaPlaybackMediaFilesPayload) (RequestDahuaPlaybackMediaFilesResponse, error)
+	getRecordingSegmentsFn           func(VideoChannelObject, ObjectController, GetRecordingSegmentsPayload) (GetRecordingSegmentsResponse, error)
 }
 
 // SetAnalyticsMetadata implements VideoChannelObject.
@@ -234,6 +269,9 @@ func (v *videoChannelObject) GetAvailableActions() []ObjectAction {
 		{Action: VIDEO_CHANNEL_ACTION_PTZ_CONTROL, Domain: v.metadata.Domain},
 		{Action: VIDEO_CHANNEL_ACTION_VIDEOCLIP, Domain: v.metadata.Domain},
 		{Action: VIDEO_CHANNEL_ACTION_SEEK, Domain: v.metadata.Domain},
+		{Action: VIDEO_CHANNEL_ACTION_REQUEST_DOLYNK_STREAM_URL, Domain: v.metadata.Domain},
+		{Action: VIDEO_CHANNEL_ACTION_REQUEST_DAHUA_PLAYBACK_MEDIA_FILES, Domain: v.metadata.Domain},
+		{Action: VIDEO_CHANNEL_ACTION_GET_RECORDING_SEGMENTS, Domain: v.metadata.Domain},
 	}
 }
 
@@ -292,7 +330,63 @@ func (v *videoChannelObject) RunAction(id, action string, payload []byte) (map[s
 		if err := json.Unmarshal(payload, &p); err != nil {
 			return nil, err
 		}
-		return nil, v.seekFn(v, v.controller, p)
+		result, err := v.seekFn(v, v.controller, p)
+		return map[string]string{"error": strconv.FormatBool(result.Error), "message": result.Message}, err
+
+	case VIDEO_CHANNEL_ACTION_REQUEST_DOLYNK_STREAM_URL:
+		var p RequestDolynkStreamURLPayload
+		if err := json.Unmarshal(payload, &p); err != nil {
+			return nil, err
+		}
+		response, err := v.requestDolynkStreamURLFn(v, v.controller, p)
+		if err != nil {
+			return nil, err
+		}
+		rawJson, err := json.Marshal(response)
+		if err != nil {
+			return nil, err
+		}
+		mapJson := map[string]string{}
+		err = json.Unmarshal(rawJson, &mapJson)
+		if err != nil {
+			return nil, err
+		}
+		return mapJson, nil
+
+	case VIDEO_CHANNEL_ACTION_REQUEST_DAHUA_PLAYBACK_MEDIA_FILES:
+		var p RequestDahuaPlaybackMediaFilesPayload
+		if err := json.Unmarshal(payload, &p); err != nil {
+			return nil, err
+		}
+		response, err := v.requestDahuaPlaybackMediaFilesFn(v, v.controller, p)
+		if err != nil {
+			return nil, err
+		}
+
+		mapJson := map[string]string{}
+		for i, mediaFile := range response.MediaFiles {
+			mediaFileJson, err := json.Marshal(mediaFile)
+			if err != nil {
+				return nil, err
+			}
+			mapJson[strconv.Itoa(i)] = string(mediaFileJson)
+		}
+		return mapJson, nil
+
+	case VIDEO_CHANNEL_ACTION_GET_RECORDING_SEGMENTS:
+		var p GetRecordingSegmentsPayload
+		if err := json.Unmarshal(payload, &p); err != nil {
+			return nil, err
+		}
+		response, err := v.getRecordingSegmentsFn(v, v.controller, p)
+		if err != nil {
+			return nil, err
+		}
+		rawJson, err := json.Marshal(response)
+		if err != nil {
+			return nil, err
+		}
+		return map[string]string{"data": string(rawJson)}, nil
 	}
 
 	return nil, fmt.Errorf("action %s not found", action)
@@ -317,6 +411,82 @@ func (v *videoChannelObject) Setup(oc ObjectController) error {
 
 }
 
+type RequestDolynkStreamURLPayload struct {
+	// DeviceID es el número de serie del dispositivo (requerido)
+	DeviceID string `json:"deviceId" binding:"required"`
+
+	// DevCode es la contraseña del dispositivo (opcional)
+	// Nota: En la herramienta de depuración de API, se usa la contraseña original sin cifrar.
+	// Ver código de ejemplo para el cifrado de contraseña del dispositivo.
+	DevCode string `json:"devCode,omitempty"`
+
+	// ChannelID es el número del canal (requerido)
+	ChannelID int `json:"channelId" binding:"required"`
+
+	// BusinessType es el tipo de servicio (requerido)
+	// Valores válidos:
+	//   - "Real": Vista en vivo
+	//   - "talk": Conversación de voz
+	//   - "localRecord": Grabación de video local
+	//   - "cloudRecord": Grabación de video en la nube
+	BusinessType string `json:"businessType" binding:"required"`
+
+	// EncryptMode es el modo de cifrado (requerido)
+	// Valores:
+	//   - 0: No cifrar
+	//   - 1: Cifrar
+	EncryptMode int `json:"encryptMode" binding:"required"`
+
+	// BeginTime es la hora de inicio de la reproducción de video (opcional)
+	// Requerido cuando el tipo de negocio es grabación de video.
+	// Formato: yyyy-MM-dd HH:mm:ss
+	BeginTime string `json:"beginTime,omitempty"`
+
+	// EndTime es la hora de finalización de la reproducción de video (opcional)
+	// Requerido cuando el tipo de negocio es grabación de video.
+	// Formato: yyyy-MM-dd HH:mm:ss
+	EndTime string `json:"endTime,omitempty"`
+
+	// StreamType es el tipo de stream (opcional)
+	// Valores:
+	//   - 0: Stream principal
+	//   - 1: Sub stream
+	StreamType *int `json:"streamType,omitempty"`
+
+	// ProtoType es el tipo de protocolo (requerido)
+	// Valores válidos:
+	//   - "rtsp"
+	//   - "rtsv"
+	ProtoType string `json:"protoType" binding:"required"`
+
+	// DeviceType es requerido para conversación de voz (opcional en otros casos)
+	// Valores:
+	//   - "Channel": Dispositivo multicanal
+	//   - "device": Dispositivo de un solo canal
+	DeviceType string `json:"deviceType,omitempty"`
+
+	// AssistStream es el marco inteligente (la resolución varía con los cambios del dispositivo) (opcional)
+	// Valores:
+	//   - 0: Deshabilitado
+	//   - 1: Habilitado
+	AssistStream *int `json:"assistStream,omitempty"`
+
+	// RecordPlayType es el tipo de reproducción de video local (opcional)
+	// Solo tiene efecto cuando businessType es localRecord.
+	// Valores:
+	//   - 0: Reproducir por tiempo
+	//   - 1: Reproducir por nombre de archivo
+	RecordPlayType *int `json:"recordPlayType,omitempty"`
+
+	// RecordFileName es el nombre del archivo de video local (opcional)
+	// Este parámetro es requerido cuando recordPlayType es 1.
+	RecordFileName string `json:"recordFileName,omitempty"`
+}
+
+type RequestDolynkStreamURLResponse struct {
+	StreamURL string `json:"stream_url"`
+}
+
 type NewVideoChannelObjectProps struct {
 	Metadata ObjectMetadata
 
@@ -326,24 +496,43 @@ type NewVideoChannelObjectProps struct {
 	PTZ         bool
 	Recording   bool
 
-	SetupFn     func(VideoChannelObject, ObjectController) error
-	SnapshotFn  func(VideoChannelObject, ObjectController, SnapshotActionPayload) (string, error)
-	VideoclipFn func(VideoChannelObject, ObjectController, VideoClipActionPayload) (string, error)
-	PtzFn       func(VideoChannelObject, ObjectController, VideoChannelActionPtzControlPayload) error
-	SeekFn      func(VideoChannelObject, ObjectController, SeekPayload) error
+	SetupFn                        func(VideoChannelObject, ObjectController) error
+	SnapshotFn                     func(VideoChannelObject, ObjectController, SnapshotActionPayload) (string, error)
+	VideoclipFn                    func(VideoChannelObject, ObjectController, VideoClipActionPayload) (string, error)
+	PtzFn                          func(VideoChannelObject, ObjectController, VideoChannelActionPtzControlPayload) error
+	SeekFn                         func(VideoChannelObject, ObjectController, SeekPayload) (SeekResult, error)
+	RequestDolynkStreamURL         func(VideoChannelObject, ObjectController, RequestDolynkStreamURLPayload) (RequestDolynkStreamURLResponse, error)
+	RequestDahuaPlaybackMediaFiles func(VideoChannelObject, ObjectController, RequestDahuaPlaybackMediaFilesPayload) (RequestDahuaPlaybackMediaFilesResponse, error)
+	GetRecordingSegmentsFn         func(VideoChannelObject, ObjectController, GetRecordingSegmentsPayload) (GetRecordingSegmentsResponse, error)
+}
+
+type RequestDahuaPlaybackMediaFilesPayload struct {
+	StartTime string `json:"start_time"`
+	EndTime   string `json:"end_time"`
+}
+type RequestDahuaPlaybackMediaFilesResponse struct {
+	MediaFiles []MediaFileItem `json:"media_files"`
+}
+
+type SeekResult struct {
+	Error   bool   `json:"error"`
+	Message string `json:"message"`
 }
 
 func NewVideoChannelObject(props NewVideoChannelObjectProps) VideoChannelObject {
 	return &videoChannelObject{
-		metadata:      props.Metadata,
-		streamId:      props.StreamID,
-		subStreamId:   props.SubstreamID,
-		ptz:           props.PTZ,
-		videoEngineId: props.VideoEngine,
-		setupFn:       props.SetupFn,
-		snapshotFn:    props.SnapshotFn,
-		videoclipFn:   props.VideoclipFn,
-		ptzFn:         props.PtzFn,
-		seekFn:        props.SeekFn,
+		metadata:                         props.Metadata,
+		streamId:                         props.StreamID,
+		subStreamId:                      props.SubstreamID,
+		ptz:                              props.PTZ,
+		videoEngineId:                    props.VideoEngine,
+		setupFn:                          props.SetupFn,
+		snapshotFn:                       props.SnapshotFn,
+		videoclipFn:                      props.VideoclipFn,
+		ptzFn:                            props.PtzFn,
+		seekFn:                           props.SeekFn,
+		requestDolynkStreamURLFn:         props.RequestDolynkStreamURL,
+		requestDahuaPlaybackMediaFilesFn: props.RequestDahuaPlaybackMediaFiles,
+		getRecordingSegmentsFn:           props.GetRecordingSegmentsFn,
 	}
 }
