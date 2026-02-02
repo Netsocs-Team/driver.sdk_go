@@ -182,10 +182,20 @@ func ListenConfig(host string, driverKey string, siteId string, token string, dr
 			if err != nil {
 				log.Println("unmarshal:", err)
 			} else {
+				// Handle PING message immediately
+				if configMessage.ConfigKey == PING {
+					log.Printf("recv PING, responding with PONG")
+					responses <- &s_response{
+						RequestId: configMessage.RequestID,
+						Data:      "pong",
+					}
+					continue
+				}
+
 				messages <- configMessage
 			}
 
-			if configMessage.ConfigKey == "SAVE_VIDEO_ENGINE" {
+			if configMessage.ConfigKey == SAVE_VIDEO_ENGINE {
 				type msg struct {
 					VideoEngine string `json:"video_engine"`
 				}
