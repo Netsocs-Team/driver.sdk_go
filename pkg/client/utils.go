@@ -20,6 +20,13 @@ type rtsp2StreamIdRequest struct {
 	} `json:"payload"`
 }
 
+type publishToStreamIdRequest struct {
+	ObjectID []string `json:"object_id"`
+	Payload  struct {
+		StreamID string `json:"stream_id"`
+	} `json:"payload"`
+}
+
 type RTSPToStreamIDOpts struct {
 	Record         bool
 	SourceOnDemand bool `json:"source_on_demand,omitempty"`
@@ -73,4 +80,35 @@ func (n *NetsocsDriverClient) HTTPToStreamID(httpUrl string, streamID string) (v
 		return "", fmt.Errorf("error converting http to stream id: %s", resp.String())
 	}
 	return videoEngineDefaultId, nil
+}
+
+func (n *NetsocsDriverClient) PublishToStreamID(streamID string) (videoEngine string, err error) {
+	videoEngineDefaultId := "netsocs_native.video_engine.default"
+	if n.videoEngineID != "" {
+		videoEngineDefaultId = n.videoEngineID
+	}
+	videoEngineDefaultDomain := "netsocs_native.video_engine"
+	req := publishToStreamIdRequest{}
+	req.ObjectID = []string{videoEngineDefaultId}
+	req.Payload.StreamID = streamID
+	resp, err := resty.New().R().SetBody(req).Post(fmt.Sprintf("%s/objects/actions/executions/%s/publish_to_stream_id", n.driverHubHost, videoEngineDefaultDomain))
+
+	if err != nil {
+		return "", err
+	}
+
+	if resp.StatusCode() >= 400 {
+		return "", fmt.Errorf("error converting http to stream id: %s", resp.String())
+	}
+	return videoEngineDefaultId, nil
+}
+
+// GetMediaMTXHost returns the MediaMTX host for RTSP push
+func (n *NetsocsDriverClient) GetMediaMTXHost() string {
+	return n.mediaMTXHost
+}
+
+// SetMediaMTXHost sets the MediaMTX host
+func (n *NetsocsDriverClient) SetMediaMTXHost(host string) {
+	n.mediaMTXHost = host
 }

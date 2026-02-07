@@ -26,6 +26,7 @@ type NetsocsDriverClient struct {
 	driverVersion       string
 	driverDocumentation string
 	siteHost            string
+	mediaMTXHost        string
 }
 
 func (n *NetsocsDriverClient) SetVideoEngineID(videoEngineID string) {
