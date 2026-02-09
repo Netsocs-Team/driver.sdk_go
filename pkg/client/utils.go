@@ -102,13 +102,3 @@ func (n *NetsocsDriverClient) PublishToStreamID(streamID string) (videoEngine st
 	}
 	return videoEngineDefaultId, nil
 }
-
-// GetMediaMTXHost returns the MediaMTX host for RTSP push
-func (n *NetsocsDriverClient) GetMediaMTXHost() string {
-	return n.mediaMTXHost
-}
-
-// SetMediaMTXHost sets the MediaMTX host
-func (n *NetsocsDriverClient) SetMediaMTXHost(host string) {
-	n.mediaMTXHost = host
-}

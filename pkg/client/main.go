@@ -14,19 +14,20 @@ import (
 )
 
 type NetsocsDriverClient struct {
-	driverKey           string
-	driverHubHost       string
-	isSSL               bool
-	DriverName          string
-	objectsRunner       objects.ObjectRunner
-	siteID              string
-	videoEngineID       string
-	token               string
-	driverID            string
-	driverVersion       string
-	driverDocumentation string
-	siteHost            string
-	mediaMTXHost        string
+	driverKey                       string
+	driverHubHost                   string
+	isSSL                           bool
+	DriverName                      string
+	objectsRunner                   objects.ObjectRunner
+	siteID                          string
+	videoEngineID                   string
+	token                           string
+	driverID                        string
+	driverVersion                   string
+	driverDocumentation             string
+	siteHost                        string
+	mediaMTXHost                    string
+	videoEngineAdditionalProperties config.VideoEngineAdditionalProperties
 }
 
 func (n *NetsocsDriverClient) SetVideoEngineID(videoEngineID string) {
@@ -47,6 +48,13 @@ func (n *NetsocsDriverClient) SetDriverID(driverID string) {
 
 func (n *NetsocsDriverClient) SetSiteHost(siteHost string) {
 	n.siteHost = siteHost
+}
+func (n *NetsocsDriverClient) SetVideoEngineAdditionalProperties(videoEngineAdditionalProperties config.VideoEngineAdditionalProperties) {
+	n.videoEngineAdditionalProperties = videoEngineAdditionalProperties
+}
+
+func (n *NetsocsDriverClient) GetVideoEngineProperties() config.VideoEngineAdditionalProperties {
+	return n.videoEngineAdditionalProperties
 }
 
 func (n *NetsocsDriverClient) GetToken() string {
@@ -147,8 +155,9 @@ func (d *NetsocsDriverClient) UploadFileAndGetURL(file *os.File) (string, error)
 
 func (d *NetsocsDriverClient) ListenConfig() error {
 
-	return config.ListenConfig(d.driverHubHost, d.driverKey, d.siteID, d.token, d.driverID, func(videoEngineID string) {
+	return config.ListenConfig(d.driverHubHost, d.driverKey, d.siteID, d.token, d.driverID, func(videoEngineID string, videoEngineAdditionalProperties config.VideoEngineAdditionalProperties) {
 		d.SetVideoEngineID(videoEngineID)
+		d.SetVideoEngineAdditionalProperties(videoEngineAdditionalProperties)
 	}, d.driverVersion, d.driverDocumentation)
 }
 

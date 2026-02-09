@@ -53,6 +53,18 @@ type ConfigMessageDeviceData struct {
 	SetVideoEngineID func(string)           `json:"-"`
 }
 
+type VideoEngineAdditionalProperties struct {
+	APIPort      string `json:"api_port"`
+	HLSPort      string `json:"hls_port"`
+	Hostname     string `json:"hostname"`
+	Offline      string `json:"offline"`
+	PlaybackPort string `json:"playback_port"`
+	RTSPPort     string `json:"rtsp_port"`
+	SiteID       string `json:"site_id"`
+	State        string `json:"state"`
+	WebrtcPort   string `json:"webrtc_port"`
+}
+
 var messages = make(chan *ConfigMessage)
 var responses = make(chan *s_response)
 
@@ -72,7 +84,7 @@ type defaultDataResponse struct {
 // This function, upon receiving a configuration, will look in the map of handlers
 // to see if there is a handler for that configuration. If there is no handler, it will return an error.
 // More information here https://.../docs
-func ListenConfig(host string, driverKey string, siteId string, token string, driverID string, setVideoEngineID func(string), driverVersion string, driverDocumentation string) error {
+func ListenConfig(host string, driverKey string, siteId string, token string, driverID string, setVideoEngineID func(string, VideoEngineAdditionalProperties), driverVersion string, driverDocumentation string) error {
 	go func() {
 		for message := range messages {
 			handler := handlersMap[message.ConfigKey]
@@ -197,15 +209,17 @@ func ListenConfig(host string, driverKey string, siteId string, token string, dr
 
 			if configMessage.ConfigKey == SAVE_VIDEO_ENGINE {
 				type msg struct {
-					VideoEngine string `json:"video_engine"`
+					VideoEngine                     string                          `json:"video_engine"`
+					VideoEngineAdditionalProperties VideoEngineAdditionalProperties `json:"video_engine_additional_properties"`
 				}
+
 				var msgData msg
 				err = json.Unmarshal([]byte(configMessage.Value), &msgData)
 				if err != nil {
 					log.Println("unmarshal msgData:", err)
 				} else {
 					if setVideoEngineID != nil {
-						setVideoEngineID(msgData.VideoEngine)
+						setVideoEngineID(msgData.VideoEngine, msgData.VideoEngineAdditionalProperties)
 					}
 				}
 			}

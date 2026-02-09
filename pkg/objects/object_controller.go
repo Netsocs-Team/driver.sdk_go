@@ -344,18 +344,19 @@ func (o *objectController) ListenActionRequests() error {
 	}
 	defer c.Close()
 
-	done := make(chan struct{})
-
-	eventbus.Pubsub.Subscribe("SUBSCRIBE_OBJECTS_COMMANDS_LISTENING", func(data interface{}) {
+	subscribeHandler := func(data interface{}) {
 		domain := reflect.ValueOf(data).FieldByName("Domain")
 		if domain.IsValid() {
-			err = c.WriteJSON(wsMessage{EventType: "REQUEST_SUBSCRIPTION_TO_DOMAIN", Domain: domain.String()})
-			if err != nil {
-				_logger.Error(err)
+			writeErr := c.WriteJSON(wsMessage{EventType: "REQUEST_SUBSCRIPTION_TO_DOMAIN", Domain: domain.String()})
+			if writeErr != nil {
+				_logger.Error(writeErr)
 			}
 		}
-	})
+	}
+	eventbus.Pubsub.Subscribe("SUBSCRIBE_OBJECTS_COMMANDS_LISTENING", subscribeHandler)
+	defer eventbus.Pubsub.Unsubscribe("SUBSCRIBE_OBJECTS_COMMANDS_LISTENING", subscribeHandler)
 
+	done := make(chan struct{})
 	defer close(done)
 	for {
 		_, message, err := c.ReadMessage()
