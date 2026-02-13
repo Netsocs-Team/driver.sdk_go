@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 
@@ -151,6 +152,15 @@ func (d *NetsocsDriverClient) GetChildren(parentId int) ([]Device, error) {
 
 func (d *NetsocsDriverClient) UploadFileAndGetURL(file *os.File) (string, error) {
 	return tools.UploadFileAndGetURLWithReset(d.driverHubHost, d.driverKey, file)
+}
+
+// UploadSnapshot uploads image data to the DriverHub /snapshots/upload endpoint.
+// r is the image content (e.g. *os.File, *bytes.Reader). filename is used as the
+// multipart file name and as the stored name when customName is empty (e.g. "snapshot.jpg").
+// customName is optional. Only image files (.jpg, .jpeg, .png) are accepted by the backend.
+// Returns the response with filename, url and path (e.g. "/public/filename.jpg").
+func (d *NetsocsDriverClient) UploadSnapshot(r io.Reader, filename string, customName string) (tools.SnapshotUploadResponse, error) {
+	return tools.UploadSnapshot(d.driverHubHost, d.driverKey, r, filename, customName)
 }
 
 func (d *NetsocsDriverClient) ListenConfig() error {
