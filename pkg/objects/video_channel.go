@@ -96,6 +96,7 @@ type VideoClipActionPayload struct {
 type SnapshotActionPayload struct {
 	Timestamp  string `json:"snapshot_timestamp"` //if its empty make it as soon as received
 	Resolution string `json:"resolution"`         //"1920x1080"
+	Filename   string `json:"filename"`           //if its empty, the filename will be the timestamp
 }
 
 type VideoChannelActionPtzControlPayloadDirection string
