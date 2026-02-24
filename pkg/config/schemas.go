@@ -587,3 +587,38 @@ type GetPeopleCountingResponseItem struct {
 }
 
 type GetPeopleCountingResponse []GetPeopleCountingResponseItem
+
+// PanTilt holds pan (horizontal) and tilt (vertical) and optional space URI.
+type PanTilt struct {
+	X     float64 `json:"x"`
+	Y     float64 `json:"y"`
+	Space string  `json:"space,omitempty"`
+}
+
+// Zoom holds zoom level and optional space URI.
+type Zoom struct {
+	X     float64 `json:"x"`
+	Space string  `json:"space,omitempty"`
+}
+
+// PTZPosition is the pan/tilt/zoom position.
+type PTZPosition struct {
+	PanTilt *PanTilt `json:"pan_tilt,omitempty"`
+	Zoom    *Zoom    `json:"zoom,omitempty"`
+}
+
+// PTZPreset represents a saved PTZ position (generic, storage-friendly).
+type PTZPreset struct {
+	Token    string      `json:"token"`
+	Name     string      `json:"name"`
+	Position PTZPosition `json:"position"`
+}
+
+// ActionPTZGotoPresetRequest is the payload for ACTION_PTZ_GOTO_PRESET.
+// The driver receives this and must move the camera channel to the given preset position.
+type ActionPTZGotoPresetRequest struct {
+	ChannelNumber string    `json:"channelNumber"`
+	Preset        PTZPreset `json:"preset"`
+}
+
+type ActionPTZGotoPresetResponse error
