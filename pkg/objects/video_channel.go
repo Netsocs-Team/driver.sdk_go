@@ -21,6 +21,7 @@ const VIDEO_CHANNEL_ACTION_REQUEST_DOLYNK_STREAM_URL = "video_channel.action.req
 const VIDEO_CHANNEL_ACTION_REQUEST_DAHUA_PLAYBACK_MEDIA_FILES = "video_channel.action.request_dahua_playback_media_files"
 const VIDEO_CHANNEL_ACTION_SEEK = "video_channel.action.seek" //seek to a specific timestamp to playback id
 const VIDEO_CHANNEL_ACTION_GET_RECORDING_SEGMENTS = "video_channel.action.get_recording_segments"
+const VIDEO_CHANNEL_ACTION_PTZ_GET_STATUS = "video_channel.action.ptz_get_status"
 
 // seek states
 const VIDEO_CHANNEL_SEEK_STATE_MEDIA_NOT_FOUND = "media_not_found"
@@ -120,6 +121,23 @@ type VideoChannelActionPtzGotoPresetPayload struct {
 	Token    string                `json:"token"`
 	Name     string                `json:"name"`
 	Position PTZGotoPresetPosition `json:"position"`
+}
+
+type PTZPanTiltPosition struct {
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
+}
+
+type PTZZoomPosition struct {
+	X float64 `json:"x"`
+}
+
+type PTZStatusResponse struct {
+	PanTilt PTZPanTiltPosition `json:"pan_tilt"`
+	Zoom    PTZZoomPosition    `json:"zoom"`
+	Status  string             `json:"status"` // "idle", "moving"
+	Error   bool               `json:"error"`
+	Message string             `json:"message"`
 }
 
 type VideoChannelActionPtzControlPayloadDirection string
@@ -227,6 +245,7 @@ type videoChannelObject struct {
 	videoclipFn                      func(VideoChannelObject, ObjectController, VideoClipActionPayload) (filename string, err error)
 	ptzFn                            func(VideoChannelObject, ObjectController, VideoChannelActionPtzControlPayload) error
 	gotoPresetFn                     func(VideoChannelObject, ObjectController, VideoChannelActionPtzGotoPresetPayload) error
+	getPtzStatusFn                   func(VideoChannelObject, ObjectController) (PTZStatusResponse, error)
 	seekFn                           func(VideoChannelObject, ObjectController, SeekPayload) (SeekResult, error)
 	requestDolynkStreamURLFn         func(VideoChannelObject, ObjectController, RequestDolynkStreamURLPayload) (RequestDolynkStreamURLResponse, error)
 	requestDahuaPlaybackMediaFilesFn func(VideoChannelObject, ObjectController, RequestDahuaPlaybackMediaFilesPayload) (RequestDahuaPlaybackMediaFilesResponse, error)
@@ -298,6 +317,7 @@ func (v *videoChannelObject) GetAvailableActions() []ObjectAction {
 		{Action: VIDEO_CHANNEL_ACTION_REQUEST_DOLYNK_STREAM_URL, Domain: v.metadata.Domain},
 		{Action: VIDEO_CHANNEL_ACTION_REQUEST_DAHUA_PLAYBACK_MEDIA_FILES, Domain: v.metadata.Domain},
 		{Action: VIDEO_CHANNEL_ACTION_GET_RECORDING_SEGMENTS, Domain: v.metadata.Domain},
+		{Action: VIDEO_CHANNEL_ACTION_PTZ_GET_STATUS, Domain: v.metadata.Domain},
 	}
 }
 
@@ -420,6 +440,17 @@ func (v *videoChannelObject) RunAction(id, action string, payload []byte) (map[s
 			return nil, err
 		}
 		return map[string]string{"data": string(rawJson)}, nil
+
+	case VIDEO_CHANNEL_ACTION_PTZ_GET_STATUS:
+		response, err := v.getPtzStatusFn(v, v.controller)
+		if err != nil {
+			return nil, err
+		}
+		rawJson, err := json.Marshal(response)
+		if err != nil {
+			return nil, err
+		}
+		return map[string]string{"data": string(rawJson)}, nil
 	}
 
 	return nil, fmt.Errorf("action %s not found", action)
@@ -534,6 +565,7 @@ type NewVideoChannelObjectProps struct {
 	VideoclipFn                    func(VideoChannelObject, ObjectController, VideoClipActionPayload) (string, error)
 	PtzFn                          func(VideoChannelObject, ObjectController, VideoChannelActionPtzControlPayload) error
 	GotoPresetFn                   func(VideoChannelObject, ObjectController, VideoChannelActionPtzGotoPresetPayload) error
+	GetPtzStatusFn                 func(VideoChannelObject, ObjectController) (PTZStatusResponse, error)
 	SeekFn                         func(VideoChannelObject, ObjectController, SeekPayload) (SeekResult, error)
 	RequestDolynkStreamURL         func(VideoChannelObject, ObjectController, RequestDolynkStreamURLPayload) (RequestDolynkStreamURLResponse, error)
 	RequestDahuaPlaybackMediaFiles func(VideoChannelObject, ObjectController, RequestDahuaPlaybackMediaFilesPayload) (RequestDahuaPlaybackMediaFilesResponse, error)
@@ -565,6 +597,7 @@ func NewVideoChannelObject(props NewVideoChannelObjectProps) VideoChannelObject 
 		videoclipFn:                      props.VideoclipFn,
 		ptzFn:                            props.PtzFn,
 		gotoPresetFn:                     props.GotoPresetFn,
+		getPtzStatusFn:                   props.GetPtzStatusFn,
 		seekFn:                           props.SeekFn,
 		requestDolynkStreamURLFn:         props.RequestDolynkStreamURL,
 		requestDahuaPlaybackMediaFilesFn: props.RequestDahuaPlaybackMediaFiles,
