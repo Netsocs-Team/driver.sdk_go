@@ -322,6 +322,8 @@ func (v *videoChannelObject) GetAvailableActions() []ObjectAction {
 		{Action: VIDEO_CHANNEL_ACTION_REQUEST_DAHUA_PLAYBACK_MEDIA_FILES, Domain: v.metadata.Domain},
 		{Action: VIDEO_CHANNEL_ACTION_GET_RECORDING_SEGMENTS, Domain: v.metadata.Domain},
 		{Action: VIDEO_CHANNEL_ACTION_PTZ_GET_STATUS, Domain: v.metadata.Domain},
+		{Action: VIDEO_CHANNEL_ACTION_PUBLISH_STREAM_START, Domain: v.metadata.Domain},
+		{Action: VIDEO_CHANNEL_ACTION_PUBLISH_STREAM_STOP, Domain: v.metadata.Domain},
 	}
 }
 
