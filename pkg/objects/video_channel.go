@@ -22,6 +22,8 @@ const VIDEO_CHANNEL_ACTION_REQUEST_DAHUA_PLAYBACK_MEDIA_FILES = "video_channel.a
 const VIDEO_CHANNEL_ACTION_SEEK = "video_channel.action.seek" //seek to a specific timestamp to playback id
 const VIDEO_CHANNEL_ACTION_GET_RECORDING_SEGMENTS = "video_channel.action.get_recording_segments"
 const VIDEO_CHANNEL_ACTION_PTZ_GET_STATUS = "video_channel.action.ptz_get_status"
+const VIDEO_CHANNEL_ACTION_PUBLISH_STREAM_START = "publish_stream_start"
+const VIDEO_CHANNEL_ACTION_PUBLISH_STREAM_STOP = "publish_stream_stop"
 
 // seek states
 const VIDEO_CHANNEL_SEEK_STATE_MEDIA_NOT_FOUND = "media_not_found"
@@ -250,6 +252,8 @@ type videoChannelObject struct {
 	requestDolynkStreamURLFn         func(VideoChannelObject, ObjectController, RequestDolynkStreamURLPayload) (RequestDolynkStreamURLResponse, error)
 	requestDahuaPlaybackMediaFilesFn func(VideoChannelObject, ObjectController, RequestDahuaPlaybackMediaFilesPayload) (RequestDahuaPlaybackMediaFilesResponse, error)
 	getRecordingSegmentsFn           func(VideoChannelObject, ObjectController, GetRecordingSegmentsPayload) (GetRecordingSegmentsResponse, error)
+	publishStreamStartFn             func(VideoChannelObject, ObjectController, PublishStreamStartPayload) error
+	publishStreamStopFn              func(VideoChannelObject, ObjectController, PublishStreamStopPayload) error
 }
 
 // SetAnalyticsMetadata implements VideoChannelObject.
@@ -451,6 +455,18 @@ func (v *videoChannelObject) RunAction(id, action string, payload []byte) (map[s
 			return nil, err
 		}
 		return map[string]string{"data": string(rawJson)}, nil
+	case VIDEO_CHANNEL_ACTION_PUBLISH_STREAM_START:
+		var p PublishStreamStartPayload
+		if err := json.Unmarshal(payload, &p); err != nil {
+			return nil, err
+		}
+		return nil, v.publishStreamStartFn(v, v.controller, p)
+	case VIDEO_CHANNEL_ACTION_PUBLISH_STREAM_STOP:
+		var p PublishStreamStopPayload
+		if err := json.Unmarshal(payload, &p); err != nil {
+			return nil, err
+		}
+		return nil, v.publishStreamStopFn(v, v.controller, p)
 	}
 
 	return nil, fmt.Errorf("action %s not found", action)
@@ -551,6 +567,12 @@ type RequestDolynkStreamURLResponse struct {
 	StreamURL string `json:"stream_url"`
 }
 
+type PublishStreamStartPayload struct {
+}
+
+type PublishStreamStopPayload struct {
+}
+
 type NewVideoChannelObjectProps struct {
 	Metadata ObjectMetadata
 
@@ -570,6 +592,8 @@ type NewVideoChannelObjectProps struct {
 	RequestDolynkStreamURL         func(VideoChannelObject, ObjectController, RequestDolynkStreamURLPayload) (RequestDolynkStreamURLResponse, error)
 	RequestDahuaPlaybackMediaFiles func(VideoChannelObject, ObjectController, RequestDahuaPlaybackMediaFilesPayload) (RequestDahuaPlaybackMediaFilesResponse, error)
 	GetRecordingSegmentsFn         func(VideoChannelObject, ObjectController, GetRecordingSegmentsPayload) (GetRecordingSegmentsResponse, error)
+	PublishStreamStartFn           func(VideoChannelObject, ObjectController, PublishStreamStartPayload) error
+	PublishStreamStopFn            func(VideoChannelObject, ObjectController, PublishStreamStopPayload) error
 }
 
 type RequestDahuaPlaybackMediaFilesPayload struct {
@@ -602,5 +626,7 @@ func NewVideoChannelObject(props NewVideoChannelObjectProps) VideoChannelObject 
 		requestDolynkStreamURLFn:         props.RequestDolynkStreamURL,
 		requestDahuaPlaybackMediaFilesFn: props.RequestDahuaPlaybackMediaFiles,
 		getRecordingSegmentsFn:           props.GetRecordingSegmentsFn,
+		publishStreamStartFn:             props.PublishStreamStartFn,
+		publishStreamStopFn:              props.PublishStreamStopFn,
 	}
 }
