@@ -420,6 +420,27 @@ func (o *objectController) CreateObject(obj RegistrableObject) error {
 		return fmt.Errorf("error creating object: %s", resp.String())
 	}
 
+	if groupID := obj.GetMetadata().GroupID; groupID != "" {
+		groupRelBody := map[string]string{
+			"item_id":   obj.GetMetadata().ObjectID,
+			"name":      obj.GetMetadata().Name,
+			"type":      "object",
+			"parent_id": groupID,
+		}
+		groupURL := fmt.Sprintf("%s/groups", o.driverhub_host)
+		groupResp, groupErr := o.httpClient.R().
+			SetHeader("Content-Type", "application/json").
+			SetHeader("X-Auth-Token", o.token).
+			SetBody(groupRelBody).
+			Post(groupURL)
+		if groupErr != nil {
+			return groupErr
+		}
+		if groupResp.StatusCode() >= 400 {
+			return fmt.Errorf("error creating object-group relation: %s", groupResp.String())
+		}
+	}
+
 	return nil
 
 }

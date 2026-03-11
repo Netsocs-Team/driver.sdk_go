@@ -446,11 +446,15 @@ func (v *videoChannelObject) RunAction(id, action string, payload []byte) (map[s
 		if err != nil {
 			return nil, err
 		}
-		rawJson, err := json.Marshal(response)
-		if err != nil {
-			return nil, err
-		}
-		return map[string]string{"data": string(rawJson)}, nil
+		panTiltJSON, _ := json.Marshal(response.PanTilt)
+		zoomJSON, _ := json.Marshal(response.Zoom)
+		return map[string]string{
+			"pan_tilt": string(panTiltJSON),
+			"zoom":     string(zoomJSON),
+			"status":   response.Status,
+			"error":    strconv.FormatBool(response.Error),
+			"message":  response.Message,
+		}, nil
 	}
 
 	return nil, fmt.Errorf("action %s not found", action)

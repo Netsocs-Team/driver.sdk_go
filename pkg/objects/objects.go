@@ -16,6 +16,7 @@ type ObjectMetadata struct {
 	DeviceID string            `json:"device_id"`
 	Tags     []string          `json:"tags"`
 	ParentID string            `json:"parent_id"`
+	GroupID  string            `json:"object_group_id"`
 }
 
 type ObjectAction struct {
