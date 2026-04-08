@@ -115,3 +115,8 @@ client.AddConfigHandler(config.REQUEST_CREATE_OBJECTS, func(valueMessage config.
 4. Use the built-in logging system for debugging
 5. Follow the event naming conventions
 
+## Documentación en Español
+
+- `doc/es/README.md`
+
+
