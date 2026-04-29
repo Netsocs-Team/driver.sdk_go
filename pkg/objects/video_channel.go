@@ -574,9 +574,11 @@ type RequestDolynkStreamURLResponse struct {
 }
 
 type PublishStreamStartPayload struct {
+	Quality string `json:"quality,omitempty"` // "sub" = stream 102; "" or "main" = stream 101
 }
 
 type PublishStreamStopPayload struct {
+	Quality string `json:"quality,omitempty"` // "sub" stops sub only; "" or "main" stops main only
 }
 
 type NewVideoChannelObjectProps struct {
