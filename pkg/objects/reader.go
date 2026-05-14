@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/goccy/go-json"
 )
@@ -24,6 +25,7 @@ const READER_ACTION_DELETE_QRS = "reader.action.delete_qrs"
 const READER_ACTION_DELETE_PERSON = "reader.action.delete_person"
 const READER_ACTION_GET_PEOPLE = "get_people"
 const READER_ACTION_SET_PEOPLE = "set_people"
+const READER_ACTION_SYNC_ACCESS_DATABASE = "sync_access_database"
 
 // domain
 const READER_DOMAIN = "reader"
@@ -105,6 +107,52 @@ type ReadCredentialResponse struct {
 	Metadata map[string]string `json:"metadata"`
 }
 
+// SyncAccessDatabasePayload is the payload sent by DriversHub for the
+// sync_access_database action. It contains the full or incremental set of
+// persons, credentials, and schedules that the reader should store locally.
+type SyncAccessDatabasePayload struct {
+	Mode          string                       `json:"mode"`           // "full" | "incremental"
+	Since         *time.Time                   `json:"since,omitempty"` // incremental: only changes after this time
+	Persons       []SyncAccessDatabasePerson   `json:"persons"`
+	DeletedIDs    []string                     `json:"deleted_ids,omitempty"` // incremental: person IDs to remove
+	TwoPersonRule bool                         `json:"two_person_rule,omitempty"`
+	APBArea       *SyncAccessDatabaseAPBArea   `json:"apb_area,omitempty"`
+}
+
+type SyncAccessDatabasePerson struct {
+	PersonID       string                          `json:"person_id"`
+	Name           string                          `json:"name"`
+	Photo          string                          `json:"photo,omitempty"`
+	Credentials    []SyncAccessDatabaseCredential  `json:"credentials"`
+	Bands          []SyncAccessDatabaseTimeBand    `json:"bands"`
+	Holidays       []string                        `json:"holidays"` // blocked dates YYYY-MM-DD
+	ValidFrom      *time.Time                      `json:"valid_from,omitempty"`
+	ValidUntil     *time.Time                      `json:"valid_until,omitempty"`
+	Enabled        bool                            `json:"enabled"`
+	APBExempt      bool                            `json:"apb_exempt,omitempty"`
+	ExtendedUnlock bool                            `json:"extended_unlock,omitempty"`
+	EscortRequired bool                            `json:"escort_required,omitempty"`
+}
+
+type SyncAccessDatabaseCredential struct {
+	Type  string `json:"type"`
+	Value string `json:"value"`
+	Data  []byte `json:"data,omitempty"` // biometric template (base64-decoded)
+}
+
+type SyncAccessDatabaseTimeBand struct {
+	Weekdays  []string `json:"weekdays"`   // ["monday","tuesday",...]
+	StartTime string   `json:"start_time"` // "08:00"
+	EndTime   string   `json:"end_time"`   // "18:00"
+}
+
+type SyncAccessDatabaseAPBArea struct {
+	AreaID    string `json:"area_id"`
+	Name      string `json:"name"`
+	Mode      string `json:"mode"`      // "none" | "soft" | "hard"
+	Direction string `json:"direction"` // "entry" | "exit" | "both"
+}
+
 type readerObject struct {
 	metadata   ObjectMetadata
 	controller ObjectController
@@ -118,6 +166,7 @@ type readerObject struct {
 	setPeopleCredentials     func(this ReaderObject, controller ObjectController, payload ReaderPeople) error
 	storePeopleCredentials   func(this ReaderObject, controller ObjectController, payload ReaderPeople) error
 	readCredential           func(this ReaderObject, controller ObjectController, payload ReadCreadentialPayload) (ReadCredentialResponse, error)
+	syncAccessDatabase       func(this ReaderObject, controller ObjectController, payload SyncAccessDatabasePayload) error
 	supportedCredentialTypes []CredentialType
 }
 
@@ -163,6 +212,10 @@ func (r *readerObject) GetAvailableActions() []ObjectAction {
 		},
 		{
 			Action: READER_ACTION_SET_PEOPLE,
+			Domain: r.metadata.Domain,
+		},
+		{
+			Action: READER_ACTION_SYNC_ACCESS_DATABASE,
 			Domain: r.metadata.Domain,
 		},
 	}
@@ -244,6 +297,26 @@ func (r *readerObject) RunAction(id, action string, payload []byte) (map[string]
 			return nil, err
 		}
 		return map[string]string{"data": string(responseBytes)}, nil
+
+	case READER_ACTION_SYNC_ACCESS_DATABASE:
+		if r.syncAccessDatabase == nil {
+			return nil, fmt.Errorf("sync_access_database not implemented")
+		}
+		// DriversHub wraps the SyncPayload as {"data":"<json>"}.
+		var wrapper struct {
+			Data string `json:"data"`
+		}
+		if err := json.Unmarshal(payload, &wrapper); err != nil {
+			return nil, fmt.Errorf("sync_access_database: unmarshal wrapper: %w", err)
+		}
+		var syncPayload SyncAccessDatabasePayload
+		if err := json.Unmarshal([]byte(wrapper.Data), &syncPayload); err != nil {
+			return nil, fmt.Errorf("sync_access_database: unmarshal payload: %w", err)
+		}
+		if err := r.syncAccessDatabase(r, r.controller, syncPayload); err != nil {
+			return nil, err
+		}
+		return map[string]string{"success": "true"}, nil
 	}
 
 	return nil, fmt.Errorf("action %s not found", action)
@@ -290,6 +363,7 @@ type NewReaderObjectParams struct {
 	SetPeopleCredentialsMethod    func(this ReaderObject, controller ObjectController, payload ReaderPeople) error
 	StorePeopleCredentialsMethod  func(this ReaderObject, controller ObjectController, payload ReaderPeople) error
 	ReadCredentialMethod          func(this ReaderObject, controller ObjectController, payload ReadCreadentialPayload) (ReadCredentialResponse, error)
+	SyncAccessDatabaseMethod      func(this ReaderObject, controller ObjectController, payload SyncAccessDatabasePayload) error
 	SupportedCredentialTypes      []CredentialType
 }
 
@@ -306,5 +380,6 @@ func NewReaderObject(params NewReaderObjectParams) ReaderObject {
 		storePeopleCredentials:   params.StorePeopleCredentialsMethod,
 		supportedCredentialTypes: params.SupportedCredentialTypes,
 		readCredential:           params.ReadCredentialMethod,
+		syncAccessDatabase:       params.SyncAccessDatabaseMethod,
 	}
 }
