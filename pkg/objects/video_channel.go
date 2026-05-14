@@ -25,6 +25,14 @@ const VIDEO_CHANNEL_ACTION_PTZ_GET_STATUS = "video_channel.action.ptz_get_status
 const VIDEO_CHANNEL_ACTION_PUBLISH_STREAM_START = "publish_stream_start"
 const VIDEO_CHANNEL_ACTION_PUBLISH_STREAM_STOP = "publish_stream_stop"
 
+// VIDEO_CHANNEL_ACTION_DOWNLOAD_VIDEO_CLIP is a user-initiated clip download request.
+// DriversHub sends this action via REQUEST_ACTION_EXECUTION (objects/ws channel).
+// The driver must fetch the clip from the device and stream the raw bytes to:
+//
+//	POST {oc.GetDriverhubHost()}/video-downloads/receive/{job_id}
+//	Header: X-Auth-Token: {oc.GetDriverKey()}
+const VIDEO_CHANNEL_ACTION_DOWNLOAD_VIDEO_CLIP = "video_channel.action.download_video_clip"
+
 // seek states
 const VIDEO_CHANNEL_SEEK_STATE_MEDIA_NOT_FOUND = "media_not_found"
 const VIDEO_CHANNEL_SEEK_STATE_BAD_STATUS_CODE = "bad_status_code"
@@ -33,6 +41,18 @@ const VIDEO_CHANNEL_SEEK_STATE_SEEKING = "seeking"
 const VIDEO_CHANNEL_SEEK_STATE_VIDEO_ENGINE_NOT_AVAILABLE = "video_engine_not_available"
 
 type PTZCommand string
+
+// DownloadVideoClipActionPayload is the payload DriversHub sends when triggering
+// VIDEO_CHANNEL_ACTION_DOWNLOAD_VIDEO_CLIP. Times are RFC3339 strings.
+// Timeout is the maximum seconds the driver should spend fetching; 0 means no timeout.
+type DownloadVideoClipActionPayload struct {
+	ObjectID   string `json:"object_id"`
+	ChannelIdx int    `json:"channel_idx"`
+	StartTime  string `json:"start_time"` // RFC3339
+	EndTime    string `json:"end_time"`   // RFC3339
+	JobID      string `json:"job_id"`
+	Timeout    int    `json:"timeout"` // seconds; 0 = no timeout
+}
 
 type GetRecordingSegmentsPayload struct {
 	StartTime string `json:"start_time"`
@@ -254,6 +274,10 @@ type videoChannelObject struct {
 	getRecordingSegmentsFn           func(VideoChannelObject, ObjectController, GetRecordingSegmentsPayload) (GetRecordingSegmentsResponse, error)
 	publishStreamStartFn             func(VideoChannelObject, ObjectController, PublishStreamStartPayload) error
 	publishStreamStopFn              func(VideoChannelObject, ObjectController, PublishStreamStopPayload) error
+	// downloadVideoClipFn fetches a clip from the device and streams it to the DriversHub
+	// receive endpoint. Called inside the goroutine object_runner spawns per object_id.
+	// Leave nil if the driver does not support on-demand clip extraction.
+	downloadVideoClipFn func(VideoChannelObject, ObjectController, DownloadVideoClipActionPayload) error
 }
 
 // SetAnalyticsMetadata implements VideoChannelObject.
@@ -324,6 +348,7 @@ func (v *videoChannelObject) GetAvailableActions() []ObjectAction {
 		{Action: VIDEO_CHANNEL_ACTION_PTZ_GET_STATUS, Domain: v.metadata.Domain},
 		{Action: VIDEO_CHANNEL_ACTION_PUBLISH_STREAM_START, Domain: v.metadata.Domain},
 		{Action: VIDEO_CHANNEL_ACTION_PUBLISH_STREAM_STOP, Domain: v.metadata.Domain},
+		{Action: VIDEO_CHANNEL_ACTION_DOWNLOAD_VIDEO_CLIP, Domain: v.metadata.Domain},
 	}
 }
 
@@ -473,6 +498,19 @@ func (v *videoChannelObject) RunAction(id, action string, payload []byte) (map[s
 			return nil, err
 		}
 		return nil, v.publishStreamStopFn(v, v.controller, p)
+
+	case VIDEO_CHANNEL_ACTION_DOWNLOAD_VIDEO_CLIP:
+		if v.downloadVideoClipFn == nil {
+			return nil, fmt.Errorf("download_video_clip not supported by this object")
+		}
+		var p DownloadVideoClipActionPayload
+		if err := json.Unmarshal(payload, &p); err != nil {
+			return nil, fmt.Errorf("unmarshal download payload: %w", err)
+		}
+		if err := v.downloadVideoClipFn(v, v.controller, p); err != nil {
+			return nil, err
+		}
+		return map[string]string{"status": "complete", "job_id": p.JobID}, nil
 	}
 
 	return nil, fmt.Errorf("action %s not found", action)
@@ -602,6 +640,9 @@ type NewVideoChannelObjectProps struct {
 	GetRecordingSegmentsFn         func(VideoChannelObject, ObjectController, GetRecordingSegmentsPayload) (GetRecordingSegmentsResponse, error)
 	PublishStreamStartFn           func(VideoChannelObject, ObjectController, PublishStreamStartPayload) error
 	PublishStreamStopFn            func(VideoChannelObject, ObjectController, PublishStreamStopPayload) error
+	// DownloadVideoClipFn handles a user-initiated clip download triggered by DriversHub.
+	// Leave nil if the driver does not support on-demand clip extraction.
+	DownloadVideoClipFn func(VideoChannelObject, ObjectController, DownloadVideoClipActionPayload) error
 }
 
 type RequestDahuaPlaybackMediaFilesPayload struct {
@@ -636,5 +677,6 @@ func NewVideoChannelObject(props NewVideoChannelObjectProps) VideoChannelObject 
 		getRecordingSegmentsFn:           props.GetRecordingSegmentsFn,
 		publishStreamStartFn:             props.PublishStreamStartFn,
 		publishStreamStopFn:              props.PublishStreamStopFn,
+		downloadVideoClipFn:              props.DownloadVideoClipFn,
 	}
 }
