@@ -3,6 +3,7 @@ package objects
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -232,6 +233,93 @@ func TestTalkbackStream_Close_Idempotent(t *testing.T) {
 	default:
 		t.Fatal("Done() should be closed")
 	}
+}
+
+func TestSpeakerObject_PlayAudioClip_NotRegisteredWhenNilFn(t *testing.T) {
+	spk := NewSpeakerObject(NewSpeakerObjectProps{
+		Metadata: ObjectMetadata{Domain: "d"},
+	})
+	for _, a := range spk.GetAvailableActions() {
+		assert.NotEqual(t, SPEAKER_ACTION_PLAY_AUDIO_CLIP, a.Action)
+	}
+	assert.Contains(t, spk.GetAvailableStates(), SPEAKER_STATE_PLAYING)
+}
+
+func TestSpeakerObject_PlayAudioClip_RegisteredWhenFnProvided(t *testing.T) {
+	spk := NewSpeakerObject(NewSpeakerObjectProps{
+		Metadata:        ObjectMetadata{Domain: "d"},
+		PlayAudioClipFn: func(ctx context.Context, url string) error { return nil },
+	})
+	var found bool
+	for _, a := range spk.GetAvailableActions() {
+		if a.Action == SPEAKER_ACTION_PLAY_AUDIO_CLIP {
+			found = true
+		}
+	}
+	assert.True(t, found)
+}
+
+func TestSpeakerObject_PlayAudioClip_URLPassedToDriver(t *testing.T) {
+	ctrl := newMockMicController("http://localhost:9999")
+	const clipURL = "https://cdn.example.com/alert.mp3"
+	var gotURL string
+	spk := NewSpeakerObject(NewSpeakerObjectProps{
+		Metadata: ObjectMetadata{ObjectID: "spk.1", Domain: "d"},
+		PlayAudioClipFn: func(ctx context.Context, url string) error {
+			gotURL = url
+			return nil
+		},
+	})
+	require.NoError(t, spk.Setup(ctrl))
+
+	payload, _ := json.Marshal(PlayAudioClipActionPayload{URL: clipURL})
+	result, err := spk.RunAction("e1", SPEAKER_ACTION_PLAY_AUDIO_CLIP, payload)
+	require.NoError(t, err)
+	assert.Equal(t, "played", result["status"])
+	assert.Equal(t, clipURL, gotURL)
+}
+
+func TestSpeakerObject_PlayAudioClip_StateTransitions(t *testing.T) {
+	ctrl := newMockMicController("http://localhost:9999")
+	ready := make(chan struct{})
+	done := make(chan struct{})
+	spk := NewSpeakerObject(NewSpeakerObjectProps{
+		Metadata: ObjectMetadata{ObjectID: "spk.1", Domain: "d"},
+		PlayAudioClipFn: func(ctx context.Context, url string) error {
+			close(ready)
+			<-done
+			return nil
+		},
+	})
+	require.NoError(t, spk.Setup(ctrl))
+
+	payload, _ := json.Marshal(PlayAudioClipActionPayload{URL: "https://cdn.example.com/clip.mp3"})
+	go spk.RunAction("e1", SPEAKER_ACTION_PLAY_AUDIO_CLIP, payload)
+
+	<-ready
+	assert.Equal(t, SPEAKER_STATE_PLAYING, ctrl.getState("spk.1"))
+
+	close(done)
+	assert.Eventually(t, func() bool {
+		return ctrl.getState("spk.1") == SPEAKER_STATE_IDLE
+	}, time.Second, 10*time.Millisecond)
+}
+
+func TestSpeakerObject_PlayAudioClip_DriverError(t *testing.T) {
+	ctrl := newMockMicController("http://localhost:9999")
+	spk := NewSpeakerObject(NewSpeakerObjectProps{
+		Metadata: ObjectMetadata{ObjectID: "spk.1", Domain: "d"},
+		PlayAudioClipFn: func(ctx context.Context, url string) error {
+			return fmt.Errorf("device unreachable")
+		},
+	})
+	require.NoError(t, spk.Setup(ctrl))
+
+	payload, _ := json.Marshal(PlayAudioClipActionPayload{URL: "https://cdn.example.com/clip.mp3"})
+	_, err := spk.RunAction("e1", SPEAKER_ACTION_PLAY_AUDIO_CLIP, payload)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "device unreachable")
+	assert.Equal(t, SPEAKER_STATE_IDLE, ctrl.getState("spk.1"))
 }
 
 func TestSpeakerObject_StateTransitionsAfterStop(t *testing.T) {

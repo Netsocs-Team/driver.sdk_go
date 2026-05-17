@@ -12,10 +12,19 @@ import (
 const (
 	SPEAKER_STATE_IDLE     = "speaker.state.idle"
 	SPEAKER_STATE_TALKBACK = "speaker.state.talkback"
+	SPEAKER_STATE_PLAYING  = "speaker.state.playing"
 
-	SPEAKER_ACTION_START_TALKBACK = "speaker.action.start_talkback"
-	SPEAKER_ACTION_STOP_TALKBACK  = "speaker.action.stop_talkback"
+	SPEAKER_ACTION_START_TALKBACK  = "speaker.action.start_talkback"
+	SPEAKER_ACTION_STOP_TALKBACK   = "speaker.action.stop_talkback"
+	SPEAKER_ACTION_PLAY_AUDIO_CLIP = "speaker.action.play_audio_clip"
 )
+
+// PlayAudioClipActionPayload is sent by DriversHub when triggering SPEAKER_ACTION_PLAY_AUDIO_CLIP.
+// Timeout is a deadline hint for the driver; 0 means no deadline.
+type PlayAudioClipActionPayload struct {
+	URL     string `json:"url"`
+	Timeout int    `json:"timeout"` // seconds; 0 = no deadline
+}
 
 // TalkbackStream carries browser audio from DriversHub to the device speaker.
 // The driver reads RTP bytes via ReadRTP and forwards them to the device backchannel.
@@ -65,6 +74,11 @@ type NewSpeakerObjectProps struct {
 	// The function must call stream.ReadRTP in a loop, forward each RTP packet to
 	// the device backchannel, and return only when ctx is cancelled or stream.Done() is closed.
 	StartTalkbackFn func(ctx context.Context, sessionID string, stream *TalkbackStream) error
+
+	// PlayAudioClipFn is called with the audio clip URL received from the platform.
+	// The driver is responsible for fetching and playing the clip.
+	// The function must block until playback is complete or ctx is cancelled.
+	PlayAudioClipFn func(ctx context.Context, url string) error
 }
 
 type speakerObject struct {
@@ -99,14 +113,18 @@ func (s *speakerObject) SetStateIdle() error {
 }
 
 func (s *speakerObject) GetAvailableStates() []string {
-	return []string{SPEAKER_STATE_IDLE, SPEAKER_STATE_TALKBACK}
+	return []string{SPEAKER_STATE_IDLE, SPEAKER_STATE_TALKBACK, SPEAKER_STATE_PLAYING}
 }
 
 func (s *speakerObject) GetAvailableActions() []ObjectAction {
-	return []ObjectAction{
+	actions := []ObjectAction{
 		{Action: SPEAKER_ACTION_START_TALKBACK, Domain: s.props.Metadata.Domain},
 		{Action: SPEAKER_ACTION_STOP_TALKBACK, Domain: s.props.Metadata.Domain},
 	}
+	if s.props.PlayAudioClipFn != nil {
+		actions = append(actions, ObjectAction{Action: SPEAKER_ACTION_PLAY_AUDIO_CLIP, Domain: s.props.Metadata.Domain})
+	}
+	return actions
 }
 
 func (s *speakerObject) Setup(ctrl ObjectController) error {
@@ -128,6 +146,8 @@ func (s *speakerObject) RunAction(executionID, action string, payload []byte) (m
 		return s.startTalkback(payload)
 	case SPEAKER_ACTION_STOP_TALKBACK:
 		return s.stopTalkback(payload)
+	case SPEAKER_ACTION_PLAY_AUDIO_CLIP:
+		return s.playAudioClip(payload)
 	}
 	return nil, fmt.Errorf("speaker: unknown action %q", action)
 }
@@ -175,6 +195,25 @@ func (s *speakerObject) stopTalkback(payload []byte) (map[string]string, error) 
 		v.(*TalkbackStream).Close()
 	}
 	return nil, nil
+}
+
+func (s *speakerObject) playAudioClip(payload []byte) (map[string]string, error) {
+	var p PlayAudioClipActionPayload
+	if err := json.Unmarshal(payload, &p); err != nil {
+		return nil, fmt.Errorf("speaker: unmarshal play_audio_clip payload: %w", err)
+	}
+	if s.props.PlayAudioClipFn == nil {
+		return nil, fmt.Errorf("speaker: play_audio_clip not supported by this object")
+	}
+
+	_ = s.controller.SetState(s.props.Metadata.ObjectID, SPEAKER_STATE_PLAYING)
+	defer func() { _ = s.SetStateIdle() }()
+
+	if err := s.props.PlayAudioClipFn(context.Background(), p.URL); err != nil {
+		return nil, fmt.Errorf("speaker: play_audio_clip: %w", err)
+	}
+
+	return map[string]string{"status": "played"}, nil
 }
 
 // NewSpeakerObject creates a SpeakerObject ready to be registered with the SDK client.
