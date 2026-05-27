@@ -373,18 +373,23 @@ func (v *videoChannelObject) RunAction(id, action string, payload []byte) (map[s
 
 	switch action {
 	case VIDEO_CHANNEL_ACTION_SNAPSHOT:
+		if v.snapshotFn == nil {
+			return nil, fmt.Errorf("action %s not supported by this object", action)
+		}
 		var p SnapshotActionPayload
 		if err := json.Unmarshal(payload, &p); err != nil {
 			return nil, err
 		}
 		r, err := v.snapshotFn(v, v.controller, p)
 		if err != nil {
-
 			return nil, err
 		}
 		return map[string]string{"snapshot_link": r}, nil
 
 	case VIDEO_CHANNEL_ACTION_VIDEOCLIP:
+		if v.videoclipFn == nil {
+			return nil, fmt.Errorf("action %s not supported by this object", action)
+		}
 		var p VideoClipActionPayload
 		if err := json.Unmarshal(payload, &p); err != nil {
 			return nil, err
@@ -396,6 +401,9 @@ func (v *videoChannelObject) RunAction(id, action string, payload []byte) (map[s
 		return map[string]string{"videoclip_link": r}, nil
 
 	case VIDEO_CHANNEL_ACTION_PTZ_CONTROL:
+		if v.ptzFn == nil {
+			return nil, fmt.Errorf("action %s not supported by this object", action)
+		}
 		var p VideoChannelActionPtzControlPayload
 		if err := json.Unmarshal(payload, &p); err != nil {
 			return nil, err
@@ -403,6 +411,9 @@ func (v *videoChannelObject) RunAction(id, action string, payload []byte) (map[s
 		return nil, v.ptzFn(v, v.controller, p)
 
 	case VIDEO_CHANNEL_ACTION_PTZ_GOTO_PRESET:
+		if v.gotoPresetFn == nil {
+			return nil, fmt.Errorf("action %s not supported by this object", action)
+		}
 		var p VideoChannelActionPtzGotoPresetPayload
 		if err := json.Unmarshal(payload, &p); err != nil {
 			return nil, err
@@ -410,6 +421,9 @@ func (v *videoChannelObject) RunAction(id, action string, payload []byte) (map[s
 		return nil, v.gotoPresetFn(v, v.controller, p)
 
 	case VIDEO_CHANNEL_ACTION_SEEK:
+		if v.seekFn == nil {
+			return nil, fmt.Errorf("action %s not supported by this object", action)
+		}
 		var p SeekPayload
 		if err := json.Unmarshal(payload, &p); err != nil {
 			return nil, err
@@ -418,6 +432,9 @@ func (v *videoChannelObject) RunAction(id, action string, payload []byte) (map[s
 		return map[string]string{"error": strconv.FormatBool(result.Error), "message": result.Message}, err
 
 	case VIDEO_CHANNEL_ACTION_REQUEST_DOLYNK_STREAM_URL:
+		if v.requestDolynkStreamURLFn == nil {
+			return nil, fmt.Errorf("action %s not supported by this object", action)
+		}
 		var p RequestDolynkStreamURLPayload
 		if err := json.Unmarshal(payload, &p); err != nil {
 			return nil, err
@@ -438,6 +455,9 @@ func (v *videoChannelObject) RunAction(id, action string, payload []byte) (map[s
 		return mapJson, nil
 
 	case VIDEO_CHANNEL_ACTION_REQUEST_DAHUA_PLAYBACK_MEDIA_FILES:
+		if v.requestDahuaPlaybackMediaFilesFn == nil {
+			return nil, fmt.Errorf("action %s not supported by this object", action)
+		}
 		var p RequestDahuaPlaybackMediaFilesPayload
 		if err := json.Unmarshal(payload, &p); err != nil {
 			return nil, err
@@ -458,6 +478,9 @@ func (v *videoChannelObject) RunAction(id, action string, payload []byte) (map[s
 		return mapJson, nil
 
 	case VIDEO_CHANNEL_ACTION_GET_RECORDING_SEGMENTS:
+		if v.getRecordingSegmentsFn == nil {
+			return nil, fmt.Errorf("action %s not supported by this object", action)
+		}
 		var p GetRecordingSegmentsPayload
 		if err := json.Unmarshal(payload, &p); err != nil {
 			return nil, err
@@ -473,6 +496,9 @@ func (v *videoChannelObject) RunAction(id, action string, payload []byte) (map[s
 		return map[string]string{"data": string(rawJson)}, nil
 
 	case VIDEO_CHANNEL_ACTION_PTZ_GET_STATUS:
+		if v.getPtzStatusFn == nil {
+			return nil, fmt.Errorf("action %s not supported by this object", action)
+		}
 		response, err := v.getPtzStatusFn(v, v.controller)
 		if err != nil {
 			return nil, err
@@ -486,13 +512,21 @@ func (v *videoChannelObject) RunAction(id, action string, payload []byte) (map[s
 			"error":    strconv.FormatBool(response.Error),
 			"message":  response.Message,
 		}, nil
+
 	case VIDEO_CHANNEL_ACTION_PUBLISH_STREAM_START:
+		if v.publishStreamStartFn == nil {
+			return nil, fmt.Errorf("action %s not supported by this object", action)
+		}
 		var p PublishStreamStartPayload
 		if err := json.Unmarshal(payload, &p); err != nil {
 			return nil, err
 		}
 		return nil, v.publishStreamStartFn(v, v.controller, p)
+
 	case VIDEO_CHANNEL_ACTION_PUBLISH_STREAM_STOP:
+		if v.publishStreamStopFn == nil {
+			return nil, fmt.Errorf("action %s not supported by this object", action)
+		}
 		var p PublishStreamStopPayload
 		if err := json.Unmarshal(payload, &p); err != nil {
 			return nil, err
