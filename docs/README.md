@@ -32,6 +32,7 @@ Detailed documentation for all SDK components.
 ### Advanced Topics
 In-depth guides for complex scenarios.
 
+- **[Custom Actions](custom-actions.md)** - Register driver-defined actions on any object
 - **[Device Connection Management](advanced/device-management.md)** - Connection pooling and lifecycle
 - **[Event System Deep Dive](advanced/events.md)** - Custom events, media handling, filtering
 - **[Performance Optimization](advanced/performance.md)** - Scaling, memory management, concurrency
@@ -74,6 +75,9 @@ Production deployment and maintenance.
 
 **Handle platform requests**
 → Read [Configuration Handlers](handlers.md) → [Config API Reference](api/config.md)
+
+**Add a device-specific action not covered by built-ins**
+→ Read [Custom Actions](custom-actions.md)
 
 **Optimize performance**
 → See [Performance Optimization](advanced/performance.md)

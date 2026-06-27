@@ -481,6 +481,8 @@ sensor.UpdateStateAttributes(map[string]string{
 
 ## Custom Actions
 
+> 📖 Full guide: [docs/custom-actions.md](../../docs/custom-actions.md)
+
 Every built-in object type lets a driver register its **own actions** on top of the
 predefined ones — no need to fork the SDK or implement a new object type. Use this when
 your device supports an operation that the built-in action set doesn't cover (reboot,
