@@ -1,14 +1,14 @@
 package objects
 
-import "fmt"
-
 type VideoEngineObject interface {
 	RegistrableObject
+	CustomActionRegistrar
 }
 
 const VIDEO_ENGINE_DOMAIN = "video_engine"
 
 type videoEngineObject struct {
+	customActions
 	metadata   ObjectMetadata
 	setup      func(this VideoEngineObject, controller ObjectController) error
 	controller ObjectController
@@ -26,7 +26,7 @@ func (v *videoEngineObject) SetState(state string) error {
 
 // GetAvailableActions implements VideoEngineObject.
 func (v *videoEngineObject) GetAvailableActions() []ObjectAction {
-	return []ObjectAction{}
+	return v.customActionList(v.metadata.Domain)
 }
 
 // GetAvailableStates implements VideoEngineObject.
@@ -43,7 +43,7 @@ func (v *videoEngineObject) GetMetadata() ObjectMetadata {
 // RunAction implements VideoEngineObject.
 func (v *videoEngineObject) RunAction(id, action string, payload []byte) (map[string]string, error) {
 
-	return nil, fmt.Errorf("action %s not found", action)
+	return v.dispatchCustom(v, v.controller, id, action, payload)
 }
 
 // Setup implements VideoEngineObject.

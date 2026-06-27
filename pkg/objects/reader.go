@@ -42,6 +42,7 @@ type QRPayload struct {
 
 type ReaderObject interface {
 	RegistrableObject
+	CustomActionRegistrar
 }
 
 type ReaderPeople struct {
@@ -154,6 +155,7 @@ type SyncAccessDatabaseAPBArea struct {
 }
 
 type readerObject struct {
+	customActions
 	metadata   ObjectMetadata
 	controller ObjectController
 
@@ -177,7 +179,7 @@ func (r *readerObject) UpdateStateAttributes(attributes map[string]string) error
 
 // GetAvailableActions implements ReaderObject.
 func (r *readerObject) GetAvailableActions() []ObjectAction {
-	return []ObjectAction{
+	return append([]ObjectAction{
 		{
 			Action: READER_ACTION_READ,
 			Domain: r.metadata.Domain,
@@ -218,7 +220,7 @@ func (r *readerObject) GetAvailableActions() []ObjectAction {
 			Action: READER_ACTION_SYNC_ACCESS_DATABASE,
 			Domain: r.metadata.Domain,
 		},
-	}
+	}, r.customActionList(r.metadata.Domain)...)
 }
 
 // GetAvailableStates implements ReaderObject.
@@ -319,7 +321,7 @@ func (r *readerObject) RunAction(id, action string, payload []byte) (map[string]
 		return map[string]string{"success": "true"}, nil
 	}
 
-	return nil, fmt.Errorf("action %s not found", action)
+	return r.dispatchCustom(r, r.controller, id, action, payload)
 }
 
 // SetState implements ReaderObject.

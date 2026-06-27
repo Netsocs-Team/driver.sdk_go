@@ -45,6 +45,7 @@ func (s *MicStream) Close() {
 // MicrophoneObject represents a physical microphone on a device registered in the Netsocs platform.
 type MicrophoneObject interface {
 	RegistrableObject
+	CustomActionRegistrar
 	SetStateStreaming() error
 	SetStateIdle() error
 }
@@ -66,6 +67,7 @@ type NewMicrophoneObjectProps struct {
 }
 
 type microphoneObject struct {
+	customActions
 	props         NewMicrophoneObjectProps
 	controller    ObjectController
 	activeStreams sync.Map // sessionID → *MicStream
@@ -101,10 +103,10 @@ func (m *microphoneObject) GetAvailableStates() []string {
 }
 
 func (m *microphoneObject) GetAvailableActions() []ObjectAction {
-	return []ObjectAction{
+	return append([]ObjectAction{
 		{Action: MICROPHONE_ACTION_START_STREAM, Domain: m.props.Metadata.Domain},
 		{Action: MICROPHONE_ACTION_STOP_STREAM, Domain: m.props.Metadata.Domain},
-	}
+	}, m.customActionList(m.props.Metadata.Domain)...)
 }
 
 func (m *microphoneObject) Setup(ctrl ObjectController) error {
@@ -126,7 +128,7 @@ func (m *microphoneObject) RunAction(executionID, action string, payload []byte)
 	case MICROPHONE_ACTION_STOP_STREAM:
 		return m.stopStream(payload)
 	}
-	return nil, fmt.Errorf("microphone: unknown action %q", action)
+	return m.dispatchCustom(m, m.controller, executionID, action, payload)
 }
 
 func (m *microphoneObject) startStream(payload []byte) (map[string]string, error) {

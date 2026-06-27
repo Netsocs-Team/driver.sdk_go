@@ -479,6 +479,59 @@ sensor.UpdateStateAttributes(map[string]string{
 })
 ```
 
+## Custom Actions
+
+Every built-in object type lets a driver register its **own actions** on top of the
+predefined ones — no need to fork the SDK or implement a new object type. Use this when
+your device supports an operation that the built-in action set doesn't cover (reboot,
+calibrate, blink, run a diagnostic, etc.).
+
+Register the handler **before** registering the object with the runner, so the action is
+published to the platform:
+
+```go
+sw := objects.NewSwitchObject(params)
+
+err := sw.RegisterCustomAction("switch.action.blink", func(ctx objects.CustomActionContext) (map[string]string, error) {
+    var p struct {
+        Times int `json:"times"`
+    }
+    if err := json.Unmarshal(ctx.Payload, &p); err != nil {
+        return nil, err
+    }
+    // ... drive the device ...
+    return map[string]string{"status": "blinked"}, nil
+})
+if err != nil {
+    log.Fatal(err)
+}
+
+// Register AFTER all custom actions are added.
+runner.RegisterObject(sw)
+```
+
+`CustomActionContext` carries everything the handler needs:
+
+```go
+type CustomActionContext struct {
+    ExecutionID string            // action execution id from the platform
+    Action      string            // the custom action name being invoked
+    Payload     []byte            // raw JSON payload sent by DriversHub
+    Object      RegistrableObject // the object the action was invoked on
+    Controller  ObjectController  // for SetState / UpdateResultAttributes / etc.
+}
+```
+
+Notes:
+
+- **Register before `RegisterObject`.** The runner reads `GetAvailableActions()` once at
+  registration to publish actions to the platform; actions registered later won't be advertised.
+- **Built-in actions take precedence.** Custom actions are only dispatched when an action name
+  doesn't match a built-in one — don't reuse a built-in action name.
+- **Payload is opaque.** The platform forwards the JSON payload as-is; your handler defines and
+  unmarshals its own struct. Send a JSON object as the payload.
+- The map returned by the handler becomes the action execution result reported back to the platform.
+
 ## Custom Object Implementation
 
 While the SDK provides built-in object types, you can implement `RegistrableObject` directly for custom needs:

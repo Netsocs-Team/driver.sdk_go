@@ -1,12 +1,12 @@
 package objects
 
-import "fmt"
-
 type DoorObject interface {
 	RegistrableObject
+	CustomActionRegistrar
 }
 
 type doorObject struct {
+	customActions
 	metadata        ObjectMetadata
 	openDoorMethod  func(this DoorObject, controller ObjectController) error
 	closeDoorMethod func(this DoorObject, controller ObjectController) error
@@ -38,7 +38,7 @@ const DOOR_DOMAIN = "door"
 
 // GetAvailableActions implements DoorObject.
 func (d *doorObject) GetAvailableActions() []ObjectAction {
-	return []ObjectAction{
+	return append([]ObjectAction{
 		{
 			Action: DOOR_ACTION_OPEN,
 			Domain: d.metadata.Domain,
@@ -47,7 +47,7 @@ func (d *doorObject) GetAvailableActions() []ObjectAction {
 			Action: DOOR_ACTION_CLOSE,
 			Domain: d.metadata.Domain,
 		},
-	}
+	}, d.customActionList(d.metadata.Domain)...)
 }
 
 // GetAvailableStates implements DoorObject.
@@ -75,7 +75,7 @@ func (d *doorObject) RunAction(id, action string, payload []byte) (map[string]st
 		}
 		return nil, d.controller.SetState(d.metadata.ObjectID, DOOR_STATE_CLOSE)
 	}
-	return nil, fmt.Errorf("action %s not found", action)
+	return d.dispatchCustom(d, d.controller, id, action, payload)
 }
 
 // Setup implements DoorObject.

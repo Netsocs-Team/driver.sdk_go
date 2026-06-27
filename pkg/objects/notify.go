@@ -1,8 +1,6 @@
 package objects
 
 import (
-	"fmt"
-
 	"github.com/goccy/go-json"
 )
 
@@ -14,6 +12,7 @@ const CREATE = "create"
 
 type NotifyObject interface {
 	RegistrableObject
+	CustomActionRegistrar
 }
 
 type CreatePayload struct {
@@ -29,6 +28,7 @@ type CreatePayload struct {
 }
 
 type notifierObject struct {
+	customActions
 	controller ObjectController
 	metadata   ObjectMetadata
 	setupFn    func(notifierObject NotifyObject, oc ObjectController) error
@@ -37,12 +37,12 @@ type notifierObject struct {
 
 // GetAvailableActions implements NotifierObject.
 func (n *notifierObject) GetAvailableActions() []ObjectAction {
-	return []ObjectAction{
+	return append([]ObjectAction{
 		{
 			Action: CREATE,
 			Domain: n.GetMetadata().Domain,
 		},
-	}
+	}, n.customActionList(n.GetMetadata().Domain)...)
 }
 
 // GetAvailableStates implements NotifierObject.
@@ -63,19 +63,18 @@ func (n *notifierObject) GetMetadata() ObjectMetadata {
 
 // RunAction implements NotifierObject.
 func (n *notifierObject) RunAction(id string, action string, payload []byte) (map[string]string, error) {
-	var p CreatePayload
-	if err := json.Unmarshal(payload, &p); err != nil {
-		return nil, err
-	}
-
 	switch action {
 	case CREATE:
+		var p CreatePayload
+		if err := json.Unmarshal(payload, &p); err != nil {
+			return nil, err
+		}
 		if err := n.createFn(n, n.controller, p); err != nil {
 			return nil, err
 		}
 		return nil, nil
 	}
-	return nil, fmt.Errorf("action %s not found", action)
+	return n.dispatchCustom(n, n.controller, id, action, payload)
 }
 
 // SetState implements NotifierObject.

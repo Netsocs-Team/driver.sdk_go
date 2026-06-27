@@ -230,6 +230,7 @@ type Point struct {
 
 type VideoChannelObject interface {
 	RegistrableObject
+	CustomActionRegistrar
 	// stream helpers
 	SecondaryStream(streamId string) error
 	PrimaryStream(streamId string) error
@@ -254,6 +255,7 @@ type SeekPayload struct {
 }
 
 type videoChannelObject struct {
+	customActions
 	setupFn    func(VideoChannelObject, ObjectController) error
 	controller ObjectController
 	metadata   ObjectMetadata
@@ -336,7 +338,7 @@ func (v *videoChannelObject) SecondaryStream(streamId string) error {
 
 // GetAvailableActions implements VideoChannelObject.
 func (v *videoChannelObject) GetAvailableActions() []ObjectAction {
-	return []ObjectAction{
+	return append([]ObjectAction{
 		{Action: VIDEO_CHANNEL_ACTION_SNAPSHOT, Domain: v.metadata.Domain},
 		{Action: VIDEO_CHANNEL_ACTION_PTZ_CONTROL, Domain: v.metadata.Domain},
 		{Action: VIDEO_CHANNEL_ACTION_PTZ_GOTO_PRESET, Domain: v.metadata.Domain},
@@ -349,7 +351,7 @@ func (v *videoChannelObject) GetAvailableActions() []ObjectAction {
 		{Action: VIDEO_CHANNEL_ACTION_PUBLISH_STREAM_START, Domain: v.metadata.Domain},
 		{Action: VIDEO_CHANNEL_ACTION_PUBLISH_STREAM_STOP, Domain: v.metadata.Domain},
 		{Action: VIDEO_CHANNEL_ACTION_DOWNLOAD_VIDEO_CLIP, Domain: v.metadata.Domain},
-	}
+	}, v.customActionList(v.metadata.Domain)...)
 }
 
 // GetAvailableStates implements VideoChannelObject.
@@ -547,7 +549,7 @@ func (v *videoChannelObject) RunAction(id, action string, payload []byte) (map[s
 		return map[string]string{"status": "complete", "job_id": p.JobID}, nil
 	}
 
-	return nil, fmt.Errorf("action %s not found", action)
+	return v.dispatchCustom(v, v.controller, id, action, payload)
 
 }
 

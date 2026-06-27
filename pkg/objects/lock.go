@@ -17,9 +17,11 @@ const LOCK_ACTION_REBOOT = "reboot"
 
 type LockObject interface {
 	RegistrableObject
+	CustomActionRegistrar
 }
 
 type lockObject struct {
+	customActions
 	metadata     ObjectMetadata
 	lockMethod   func(this LockObject, controller ObjectController) (map[string]string, error)
 	unlockMethod func(this LockObject, controller ObjectController) (map[string]string, error)
@@ -30,7 +32,7 @@ type lockObject struct {
 
 // GetAvailableActions implements LockObject.
 func (d *lockObject) GetAvailableActions() []ObjectAction {
-	return []ObjectAction{
+	return append([]ObjectAction{
 		{
 			Action: LOCK_ACTION_LOCK,
 			Domain: d.metadata.Domain,
@@ -43,7 +45,7 @@ func (d *lockObject) GetAvailableActions() []ObjectAction {
 			Action: LOCK_ACTION_REBOOT,
 			Domain: d.metadata.Domain,
 		},
-	}
+	}, d.customActionList(d.metadata.Domain)...)
 }
 
 // GetAvailableStates implements LockObject.
@@ -86,7 +88,7 @@ func (d *lockObject) RunAction(id string, action string, payload []byte) (map[st
 		return d.rebootMethod(d, d.controller)
 	}
 
-	return nil, nil
+	return d.dispatchCustom(d, d.controller, id, action, payload)
 }
 
 // SetState implements LockObject.

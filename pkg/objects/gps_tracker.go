@@ -2,9 +2,11 @@ package objects
 
 type GpsTrackerObject interface {
 	RegistrableObject
+	CustomActionRegistrar
 }
 
 type gpsTrackerObject struct {
+	customActions
 	metadata   ObjectMetadata
 	controller ObjectController
 	setupFn    func(GpsTrackerObject, ObjectController) error
@@ -12,7 +14,7 @@ type gpsTrackerObject struct {
 
 // GetAvailableActions implements GpsTrackerObject.
 func (g *gpsTrackerObject) GetAvailableActions() []ObjectAction {
-	return []ObjectAction{}
+	return g.customActionList(g.GetMetadata().Domain)
 
 }
 
@@ -29,7 +31,7 @@ func (g *gpsTrackerObject) GetMetadata() ObjectMetadata {
 
 // RunAction implements GpsTrackerObject.
 func (g *gpsTrackerObject) RunAction(id string, action string, payload []byte) (map[string]string, error) {
-	return nil, nil
+	return g.dispatchCustom(g, g.controller, id, action, payload)
 }
 
 // SetState implements GpsTrackerObject.

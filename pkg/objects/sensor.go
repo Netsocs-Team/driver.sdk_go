@@ -6,6 +6,7 @@ import (
 )
 
 type sensorObject struct {
+	customActions
 	//sensorType        SensorObjectType
 	setup    SetupFunction
 	metatada ObjectMetadata
@@ -93,6 +94,7 @@ const SENSOR_CUSTOM_ACTION = "custom"
 
 type SensorObject interface {
 	RegistrableObject
+	CustomActionRegistrar
 	SetValue(value string) error
 	SetSensorType(sensorType SensorObjectType) error
 	SetUnitOfMeasurement(unitOfMeasurement string) error
@@ -102,7 +104,7 @@ type SensorObject interface {
 
 // GetAvailableActions implements RegistrableObject.
 func (s *sensorObject) GetAvailableActions() []ObjectAction {
-	return []ObjectAction{
+	return append([]ObjectAction{
 		{
 			Action: SENSOR_ACTION_BYPASS,
 			Domain: s.metatada.Domain,
@@ -115,7 +117,7 @@ func (s *sensorObject) GetAvailableActions() []ObjectAction {
 			Action: SENSOR_CUSTOM_ACTION,
 			Domain: s.metatada.Domain,
 		},
-	}
+	}, s.customActionList(s.metatada.Domain)...)
 }
 
 // GetAvailableStates implements RegistrableObject.
@@ -148,7 +150,7 @@ func (s *sensorObject) RunAction(id, action string, payload []byte) (map[string]
 		}
 		return s.customAction(s, s.controller, CustomActionPayload{})
 	}
-	return nil, fmt.Errorf("action %s not found", action)
+	return s.dispatchCustom(s, s.controller, id, action, payload)
 }
 
 // Setup implements RegistrableObject.

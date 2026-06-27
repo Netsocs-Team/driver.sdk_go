@@ -2,13 +2,13 @@ package objects
 
 import (
 	"errors"
-	"fmt"
 	"strconv"
 
 	"github.com/goccy/go-json"
 )
 
 type octopusObject struct {
+	customActions
 	setup      SetupFunction
 	metatada   ObjectMetadata
 	controller ObjectController
@@ -61,12 +61,13 @@ func (s *octopusObject) SetOffline(status bool) error {
 
 type OctopusObject interface {
 	RegistrableObject
+	CustomActionRegistrar
 	SetOffline(status bool) error
 }
 
 // GetAvailableActions implements RegistrableObject.
 func (s *octopusObject) GetAvailableActions() []ObjectAction {
-	return []ObjectAction{
+	return append([]ObjectAction{
 		{
 			Action: OCTOPUS_ACTION_RELAY_ON,
 			Domain: s.metatada.Domain,
@@ -75,7 +76,7 @@ func (s *octopusObject) GetAvailableActions() []ObjectAction {
 			Action: OCTOPUS_ACTION_RELAY_OFF,
 			Domain: s.metatada.Domain,
 		},
-	}
+	}, s.customActionList(s.metatada.Domain)...)
 }
 
 // GetAvailableStates implements RegistrableObject.
@@ -91,19 +92,18 @@ func (s *octopusObject) GetMetadata() ObjectMetadata {
 
 // RunAction implements RegistrableObject.
 func (s *octopusObject) RunAction(id, action string, payload []byte) (map[string]string, error) {
-	payloadString := string(payload)
-	payloadMap := make(map[string]string)
-	err := json.Unmarshal([]byte(payloadString), &payloadMap)
-	if err != nil {
-		return nil, err
-	}
 	switch action {
-	case OCTOPUS_ACTION_RELAY_ON:
-		return s.relayOnFn(s, s.controller, RelayOnPayload{RelayID: payloadMap["relay_id"]})
-	case OCTOPUS_ACTION_RELAY_OFF:
+	case OCTOPUS_ACTION_RELAY_ON, OCTOPUS_ACTION_RELAY_OFF:
+		payloadMap := make(map[string]string)
+		if err := json.Unmarshal(payload, &payloadMap); err != nil {
+			return nil, err
+		}
+		if action == OCTOPUS_ACTION_RELAY_ON {
+			return s.relayOnFn(s, s.controller, RelayOnPayload{RelayID: payloadMap["relay_id"]})
+		}
 		return s.relayOffFn(s, s.controller, RelayOffPayload{RelayID: payloadMap["relay_id"]})
 	}
-	return nil, fmt.Errorf("action %s not found", action)
+	return s.dispatchCustom(s, s.controller, id, action, payload)
 }
 
 // Setup implements RegistrableObject.

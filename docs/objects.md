@@ -598,6 +598,53 @@ return map[string]string{
 return nil, fmt.Errorf("device unreachable: connection timeout")
 ```
 
+#### Custom Actions
+
+Every built-in object implements `CustomActionRegistrar`, which lets a driver attach
+driver-defined actions in addition to the predefined ones — without implementing a new
+object type:
+
+```go
+type CustomActionRegistrar interface {
+    RegisterCustomAction(action string, handler CustomActionHandler) error
+}
+
+type CustomActionHandler func(ctx CustomActionContext) (map[string]string, error)
+
+type CustomActionContext struct {
+    ExecutionID string            // action execution id from the platform
+    Action      string            // the custom action name being invoked
+    Payload     []byte            // raw JSON payload sent by DriversHub
+    Object      RegistrableObject // the object the action was invoked on
+    Controller  ObjectController  // for SetState / UpdateResultAttributes / etc.
+}
+```
+
+Usage:
+
+```go
+sw := objects.NewSwitchObject(params)
+
+sw.RegisterCustomAction("switch.action.blink", func(ctx objects.CustomActionContext) (map[string]string, error) {
+    var p struct{ Times int `json:"times"` }
+    if err := json.Unmarshal(ctx.Payload, &p); err != nil {
+        return nil, err
+    }
+    return map[string]string{"status": "blinked"}, nil
+})
+
+// Register custom actions BEFORE registering the object with the runner.
+runner.RegisterObject(sw)
+```
+
+Rules:
+
+- Register custom actions **before** `RegisterObject` so they are advertised to the platform
+  (they are returned from `GetAvailableActions()` together with the built-in actions).
+- Built-in actions take precedence; a custom action name must not collide with a built-in one.
+- The payload is opaque JSON defined by the driver. Send a JSON object.
+- `RegisterCustomAction` returns an error for an empty name, a nil handler, or a duplicate name.
+
 ### Background Tasks
 
 #### Proper Goroutine Management

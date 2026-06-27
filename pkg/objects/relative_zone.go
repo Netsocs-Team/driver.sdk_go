@@ -8,6 +8,7 @@ import (
 
 type RelativeZoneObject interface {
 	RegistrableObject
+	CustomActionRegistrar
 }
 
 type RelativeZoneVertice struct {
@@ -26,6 +27,7 @@ type NewRelativeZoneObjectParams struct {
 }
 
 type relativeZoneObject struct {
+	customActions
 	setupFn    func(this RelativeZoneObject, controller ObjectController) error
 	metadata   ObjectMetadata
 	shape      RelativeZoneShape
@@ -34,7 +36,7 @@ type relativeZoneObject struct {
 
 // GetAvailableActions implements RelativeZoneObject.
 func (r *relativeZoneObject) GetAvailableActions() []ObjectAction {
-	return []ObjectAction{}
+	return r.customActionList(r.metadata.Domain)
 }
 
 // GetAvailableStates implements RelativeZoneObject.
@@ -50,7 +52,7 @@ func (r *relativeZoneObject) GetMetadata() ObjectMetadata {
 
 // RunAction implements RelativeZoneObject.
 func (r *relativeZoneObject) RunAction(id string, action string, payload []byte) (map[string]string, error) {
-	return nil, nil
+	return r.dispatchCustom(r, r.controller, id, action, payload)
 }
 
 // SetState implements RelativeZoneObject.

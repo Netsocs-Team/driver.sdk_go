@@ -1,7 +1,5 @@
 package objects
 
-import "fmt"
-
 const SWITCH_STATE_OFF = "switch.state.off"
 const SWITCH_STATE_ON = "switch.state.on"
 
@@ -11,12 +9,15 @@ const SWITCH_ACTION_TURN_OFF = "switch.action.turn_off"
 type SwitchObject interface {
 	// base interface
 	RegistrableObject
+	// custom actions
+	CustomActionRegistrar
 	// Set the state of the switch to on.
 	TurnOn() error
 	// Set the state of the switch to off.
 	TurnOff() error
 }
 type switchObject struct {
+	customActions
 	metadata      ObjectMetadata
 	switchActions SwitchActions
 	controller    ObjectController
@@ -62,7 +63,7 @@ func (s *switchObject) RunAction(id, action string, payload []byte) (map[string]
 	case SWITCH_ACTION_TURN_OFF:
 		return nil, s.switchActions.TurnOff(s, s.controller)
 	}
-	return nil, fmt.Errorf("action %s not found", action)
+	return s.dispatchCustom(s, s.controller, id, action, payload)
 
 }
 
@@ -77,6 +78,7 @@ func (s *switchObject) GetAvailableActions() []ObjectAction {
 			Domain: s.metadata.Domain,
 		})
 	}
+	actionsresponse = append(actionsresponse, s.customActionList(s.metadata.Domain)...)
 	return actionsresponse
 }
 

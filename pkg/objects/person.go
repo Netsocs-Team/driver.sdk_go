@@ -1,6 +1,7 @@
 package objects
 
 type personObject struct {
+	customActions
 	metadata   ObjectMetadata
 	controller ObjectController
 
@@ -9,7 +10,7 @@ type personObject struct {
 
 // GetAvailableActions implements RegistrableObject.
 func (p *personObject) GetAvailableActions() []ObjectAction {
-	return []ObjectAction{}
+	return p.customActionList(p.metadata.Domain)
 }
 
 // GetAvailableStates implements RegistrableObject.
@@ -25,7 +26,7 @@ func (p *personObject) GetMetadata() ObjectMetadata {
 
 // RunAction implements RegistrableObject.
 func (p *personObject) RunAction(id string, action string, payload []byte) (map[string]string, error) {
-	return nil, nil
+	return p.dispatchCustom(p, p.controller, id, action, payload)
 }
 
 // SetState implements RegistrableObject.
@@ -49,6 +50,7 @@ func (p *personObject) UpdateStateAttributes(attributes map[string]string) error
 
 type PersonObject interface {
 	RegistrableObject
+	CustomActionRegistrar
 }
 
 type NewPersonObjectParams struct {

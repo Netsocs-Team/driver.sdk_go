@@ -1,6 +1,7 @@
 package objects
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 
@@ -186,7 +187,51 @@ func NewExampleSwitch(objectID, deviceID string, deviceMgr *devices.DeviceManage
 		*/
 	}
 
-	return objects.NewSwitchObject(params)
+	sw := objects.NewSwitchObject(params)
+
+	// Custom actions
+	//
+	// Beyond the built-in turn_on/turn_off, a driver can register its own actions on
+	// any object with RegisterCustomAction. Use this for device operations the built-in
+	// action set doesn't cover (reboot, calibrate, blink, run a diagnostic, ...).
+	//
+	// IMPORTANT: register custom actions BEFORE runner.RegisterObject(sw) is called,
+	// otherwise the action won't be advertised to the platform.
+	//
+	// Example: a "blink" action that pulses the relay N times. The payload is opaque
+	// JSON defined by the driver; the handler unmarshals its own struct from ctx.Payload.
+	err := sw.RegisterCustomAction("switch.action.blink", func(ctx objects.CustomActionContext) (map[string]string, error) {
+		var p struct {
+			Times int `json:"times"`
+		}
+		if err := json.Unmarshal(ctx.Payload, &p); err != nil {
+			return nil, fmt.Errorf("invalid blink payload: %w", err)
+		}
+		if p.Times <= 0 {
+			p.Times = 1
+		}
+		log.Printf("Blinking switch %s %d time(s)", objectID, p.Times)
+
+		// TODO: pulse the device relay p.Times here, e.g.
+		//
+		// device, err := deviceMgr.GetOrConnect(...)
+		// if err != nil {
+		//     return nil, err
+		// }
+		// for i := 0; i < p.Times; i++ {
+		//     device.SetRelayState(objectID, true)
+		//     time.Sleep(200 * time.Millisecond)
+		//     device.SetRelayState(objectID, false)
+		// }
+
+		// The returned map becomes the action execution result reported to the platform.
+		return map[string]string{"status": "blinked", "times": fmt.Sprintf("%d", p.Times)}, nil
+	})
+	if err != nil {
+		log.Printf("Warning: failed to register custom action: %v", err)
+	}
+
+	return sw
 }
 
 // Examples of other switch types:

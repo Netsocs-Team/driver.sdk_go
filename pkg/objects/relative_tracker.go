@@ -7,6 +7,7 @@ const RELATIVE_TRACKER_STATE_NO_SIGNAL = "relative_tracker.state.no_signal"
 
 type RelativeTrackerObject interface {
 	RegistrableObject
+	CustomActionRegistrar
 
 	SetCoords(x, y, z float64) error
 	SetVelocity(x, y, z float64) error
@@ -18,6 +19,7 @@ type RelativeTrackerObject interface {
 }
 
 type relativeTrackerObject struct {
+	customActions
 	metadata   ObjectMetadata
 	controller ObjectController
 
@@ -41,7 +43,7 @@ func (r *relativeTrackerObject) SetNoSignalState() error {
 
 // GetAvailableActions implements RelativeTrackerObject.
 func (r *relativeTrackerObject) GetAvailableActions() []ObjectAction {
-	return []ObjectAction{}
+	return r.customActionList(r.metadata.Domain)
 }
 
 // GetAvailableStates implements RelativeTrackerObject.
@@ -57,7 +59,7 @@ func (r *relativeTrackerObject) GetMetadata() ObjectMetadata {
 
 // RunAction implements RelativeTrackerObject.
 func (r *relativeTrackerObject) RunAction(id, action string, payload []byte) (map[string]string, error) {
-	return nil, nil
+	return r.dispatchCustom(r, r.controller, id, action, payload)
 }
 
 // SetAcceleration implements RelativeTrackerObject.

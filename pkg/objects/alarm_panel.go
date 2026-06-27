@@ -1,7 +1,6 @@
 package objects
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/goccy/go-json"
@@ -32,6 +31,7 @@ const ALARM_GENERIC_ACTION_RESTORE_ALARM = "alarm.action.restore_alarm"
 
 type AlarmPanelObject interface {
 	RegistrableObject
+	CustomActionRegistrar
 	SetBypassedZones(zones []string) error
 }
 
@@ -42,6 +42,7 @@ type actionPayload struct {
 	ArmMode    string `json:"arm_mode"`
 }
 type alarmPanelObject struct {
+	customActions
 	controller ObjectController
 	metadata   ObjectMetadata
 
@@ -76,7 +77,7 @@ func (a *alarmPanelObject) SetState(state string) error {
 
 // GetAvailableActions implements AlarmPanelObject.
 func (a *alarmPanelObject) GetAvailableActions() []ObjectAction {
-	return []ObjectAction{
+	return append([]ObjectAction{
 		{
 			Action: ALARM_PANEL_ACTION_ARM,
 			Domain: a.GetMetadata().Domain,
@@ -85,7 +86,7 @@ func (a *alarmPanelObject) GetAvailableActions() []ObjectAction {
 			Action: ALARM_PANEL_ACTION_DISARM,
 			Domain: a.GetMetadata().Domain,
 		},
-	}
+	}, a.customActionList(a.GetMetadata().Domain)...)
 }
 
 // GetAvailableStates implements AlarmPanelObject.
@@ -115,8 +116,17 @@ func (a *alarmPanelObject) GetMetadata() ObjectMetadata {
 func (a *alarmPanelObject) RunAction(id, action string, payload []byte) (map[string]string, error) {
 
 	var p actionPayload
-	if err := json.Unmarshal(payload, &p); err != nil {
-		return nil, err
+	switch action {
+	case ALARM_PANEL_ACTION_ARM, ALARM_PANEL_ACTION_DISARM, ALARM_PANEL_ACTION_FIRE,
+		ALARM_PANEL_ACTION_PANIC, ALARM_PANEL_ACTION_AUXILIARY,
+		ALARM_GENERIC_ACTION_BYPASS, ALARM_GENERIC_ACTION_RESTORE_ALARM, ALARM_GENERIC_ACTION_BYPASS_REST:
+		// Only built-in actions expect the shared actionPayload shape. Custom
+		// actions carry arbitrary JSON, so they must not be unmarshalled here.
+		if err := json.Unmarshal(payload, &p); err != nil {
+			return nil, err
+		}
+	default:
+		return a.dispatchCustom(a, a.controller, id, action, payload)
 	}
 
 	switch action {
@@ -143,7 +153,7 @@ func (a *alarmPanelObject) RunAction(id, action string, payload []byte) (map[str
 	case ALARM_GENERIC_ACTION_BYPASS_REST:
 		return nil, a.bypassRestFn(a, a.controller, p.Code, p.Zone)
 	}
-	return nil, fmt.Errorf("action %s not found", action)
+	return a.dispatchCustom(a, a.controller, id, action, payload)
 }
 
 // Setup implements AlarmPanelObject.

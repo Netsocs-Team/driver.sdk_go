@@ -55,6 +55,7 @@ func (s *TalkbackStream) Close() {
 // SpeakerObject represents a physical speaker (backchannel) on a device registered in the Netsocs platform.
 type SpeakerObject interface {
 	RegistrableObject
+	CustomActionRegistrar
 	SetStateTalkback() error
 	SetStateIdle() error
 }
@@ -82,6 +83,7 @@ type NewSpeakerObjectProps struct {
 }
 
 type speakerObject struct {
+	customActions
 	props          NewSpeakerObjectProps
 	controller     ObjectController
 	activeSessions sync.Map // sessionID → *TalkbackStream
@@ -124,6 +126,7 @@ func (s *speakerObject) GetAvailableActions() []ObjectAction {
 	if s.props.PlayAudioClipFn != nil {
 		actions = append(actions, ObjectAction{Action: SPEAKER_ACTION_PLAY_AUDIO_CLIP, Domain: s.props.Metadata.Domain})
 	}
+	actions = append(actions, s.customActionList(s.props.Metadata.Domain)...)
 	return actions
 }
 
@@ -149,7 +152,7 @@ func (s *speakerObject) RunAction(executionID, action string, payload []byte) (m
 	case SPEAKER_ACTION_PLAY_AUDIO_CLIP:
 		return s.playAudioClip(payload)
 	}
-	return nil, fmt.Errorf("speaker: unknown action %q", action)
+	return s.dispatchCustom(s, s.controller, executionID, action, payload)
 }
 
 func (s *speakerObject) startTalkback(payload []byte) (map[string]string, error) {
