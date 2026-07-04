@@ -10,6 +10,8 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"strconv"
+	"sync"
 
 	"github.com/Netsocs-Team/driver.sdk_go/pkg/tools"
 	"github.com/gorilla/websocket"
@@ -65,7 +67,13 @@ type VideoEngineAdditionalProperties struct {
 	WebrtcPort   string `json:"webrtc_port"`
 }
 
-var messages = make(chan *ConfigMessage)
+// messages is buffered so the websocket read loop never blocks while handlers
+// are busy. With an unbuffered channel and a single consumer, the read loop
+// stalls on the second queued message; the DriverHub's health-check PINGs then
+// sit unread in the socket, the hub counts them as failures and evicts the
+// driver (~2.5 min with default hub settings). The connect-time burst is a few
+// messages per device, so this comfortably absorbs fleets of hundreds.
+var messages = make(chan *ConfigMessage, 1024)
 var responses = make(chan *s_response)
 
 type s_response struct {
@@ -78,6 +86,91 @@ type defaultDataResponse struct {
 	Msg   string `json:"msg"`
 }
 
+// defaultConfigWorkers is how many config handlers may run at the same time.
+// Handlers do device I/O (ping, channel discovery) that can take tens of
+// seconds per device; running them one at a time makes a multi-device fleet
+// take sum-of-all-devices to initialize. Override with NETSOCS_CONFIG_WORKERS.
+const defaultConfigWorkers = 8
+
+func configWorkerCount() int {
+	if v := os.Getenv("NETSOCS_CONFIG_WORKERS"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n >= 1 {
+			return n
+		}
+	}
+	return defaultConfigWorkers
+}
+
+// startConfigWorkers launches the pool that consumes `messages`. Messages for
+// the same device always land on the same worker, so per-device order is
+// preserved (requestCreateObjects runs before that device's actionListenEvent);
+// messages without device data share worker 0. Different devices initialize in
+// parallel, so one slow or unreachable device cannot stall the whole fleet nor
+// the websocket read loop.
+var startWorkersOnce sync.Once
+
+func startConfigWorkers() {
+	startWorkersOnce.Do(func() {
+		workers := configWorkerCount()
+		queues := make([]chan *ConfigMessage, workers)
+		for i := range queues {
+			queues[i] = make(chan *ConfigMessage, 256)
+			go func(q chan *ConfigMessage) {
+				for message := range q {
+					handleConfigMessage(message)
+				}
+			}(queues[i])
+		}
+		go func() {
+			for message := range messages {
+				idx := 0
+				if message.DeviceData != nil {
+					idx = message.DeviceData.ID % workers
+					if idx < 0 {
+						idx = -idx
+					}
+				}
+				queues[idx] <- message
+			}
+		}()
+	})
+}
+
+// handleConfigMessage dispatches one config message to its registered handler
+// and pushes the reply onto `responses`.
+func handleConfigMessage(message *ConfigMessage) {
+	handler := handlersMap[message.ConfigKey]
+	if handler == nil {
+		sendDefaultResponse(message.RequestID, true, fmt.Sprintf("'%s' not found on the driver", message.ConfigKey))
+		return
+	}
+	response, err := handler(message.Value, message.DeviceData)
+	if err != nil {
+		sendDefaultResponse(message.RequestID, true, err.Error())
+		return
+	}
+	if response == "" || response == "null" {
+		sendDefaultResponse(message.RequestID, false, "OK")
+		return
+	}
+	responses <- &s_response{
+		RequestId: message.RequestID,
+		Data:      response,
+	}
+}
+
+func sendDefaultResponse(requestID string, isError bool, msg string) {
+	jsondata, err := json.Marshal(&defaultDataResponse{Error: isError, Msg: msg})
+	if err != nil {
+		fmt.Println("Error in handler:", err)
+		return
+	}
+	responses <- &s_response{
+		RequestId: requestID,
+		Data:      string(jsondata),
+	}
+}
+
 // This function will start a websocket listener for all 'configuration' requests
 // coming from the DriverHub.
 // In the SDK, there is a map of handlers that can be registered for each configuration.
@@ -85,65 +178,7 @@ type defaultDataResponse struct {
 // to see if there is a handler for that configuration. If there is no handler, it will return an error.
 // More information here https://.../docs
 func ListenConfig(host string, driverKey string, siteId string, token string, driverID string, setVideoEngineID func(string, VideoEngineAdditionalProperties), driverVersion string, driverDocumentation string) error {
-	go func() {
-		for message := range messages {
-			handler := handlersMap[message.ConfigKey]
-			if handler != nil {
-				response, err := handler(message.Value, message.DeviceData)
-				if err == nil {
-					if response == "" || response == "null" {
-						tmp := &defaultDataResponse{
-							Error: false,
-							Msg:   "OK",
-						}
-						jsondata, err := json.Marshal(tmp)
-						if err != nil {
-							fmt.Println("Error in handler:", err)
-						} else {
-							responses <- &s_response{
-								RequestId: message.RequestID,
-								Data:      string(jsondata),
-							}
-						}
-					} else {
-						responses <- &s_response{
-							RequestId: message.RequestID,
-							Data:      response,
-						}
-					}
-				} else {
-					tmp := &defaultDataResponse{
-						Error: true,
-						Msg:   err.Error(),
-					}
-					jsondata, err := json.Marshal(tmp)
-					if err != nil {
-						fmt.Println("Error in handler:", err)
-					} else {
-						responses <- &s_response{
-							RequestId: message.RequestID,
-							Data:      string(jsondata),
-						}
-					}
-				}
-			} else {
-				tmp := &defaultDataResponse{
-					Error: true,
-					Msg:   fmt.Sprintf("'%s' not found on the driver", message.ConfigKey),
-				}
-				jsondata, err := json.Marshal(tmp)
-				if err != nil {
-					fmt.Println("Error in handler:", err)
-				} else {
-					responses <- &s_response{
-						RequestId: message.RequestID,
-						Data:      string(jsondata),
-					}
-				}
-			}
-		}
-
-	}()
+	startConfigWorkers()
 
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
