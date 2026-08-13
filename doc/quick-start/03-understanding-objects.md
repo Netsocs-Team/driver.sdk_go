@@ -521,6 +521,7 @@ type CustomActionContext struct {
     Payload     []byte            // raw JSON payload sent by DriversHub
     Object      RegistrableObject // the object the action was invoked on
     Controller  ObjectController  // for SetState / UpdateResultAttributes / etc.
+                                  // nil until the object's Setup() has run
 }
 ```
 
@@ -530,9 +531,22 @@ Notes:
   registration to publish actions to the platform; actions registered later won't be advertised.
 - **Built-in actions take precedence.** Custom actions are only dispatched when an action name
   doesn't match a built-in one — don't reuse a built-in action name.
-- **Payload is opaque.** The platform forwards the JSON payload as-is; your handler defines and
-  unmarshals its own struct. Send a JSON object as the payload.
-- The map returned by the handler becomes the action execution result reported back to the platform.
+- **Payload is opaque, and always a JSON object.** The platform forwards the payload as-is; your
+  handler defines and unmarshals its own struct. When no payload is sent the handler receives the
+  literal `null`, which unmarshals **without error** into a zero-value struct — validate required
+  fields explicitly and default the optional ones.
+- **Dispatch is by domain, not by object.** An execution without `object_id` runs on *every*
+  object registered under that domain. Register the same custom actions on all of them, or the
+  ones missing a handler report `action <name> not found`.
+- **Each execution runs in its own goroutine, with no `recover()` above it.** A panic in your
+  handler kills the driver process — wrap handlers that can panic. There is no timeout either;
+  enforce your own deadlines.
+- The map returned by the handler becomes the action execution result reported back to the
+  platform (`map[string]string` — format numbers yourself). Returning an error instead reports
+  `{"error": "..."}`.
+
+See [docs/custom-actions.md](../../docs/custom-actions.md) for the full lifecycle, routing rules,
+patterns, and troubleshooting table.
 
 ## Custom Object Implementation
 

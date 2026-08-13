@@ -642,8 +642,14 @@ Rules:
 - Register custom actions **before** `RegisterObject` so they are advertised to the platform
   (they are returned from `GetAvailableActions()` together with the built-in actions).
 - Built-in actions take precedence; a custom action name must not collide with a built-in one.
-- The payload is opaque JSON defined by the driver. Send a JSON object.
+- The payload is opaque JSON defined by the driver, and is always a JSON object. With no payload
+  the handler receives the literal `null`, which unmarshals without error — validate explicitly.
+- Dispatch is routed by **domain**: an execution without `object_id` runs on every object in that
+  domain, so register the same custom actions across all of them.
+- Handlers run in their own goroutine with no `recover()` above them — a panic kills the driver.
 - `RegisterCustomAction` returns an error for an empty name, a nil handler, or a duplicate name.
+
+Full guide: [Custom Actions](custom-actions.md).
 
 ### Background Tasks
 
