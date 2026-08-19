@@ -10,6 +10,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/Netsocs-Team/driver.sdk_go/pkg/httpx"
 )
 
 type uploadFileResponse struct {
@@ -50,7 +52,7 @@ func UploadFileAndGetURL(driverHubHost string, driverKey string, file *os.File) 
 	req.Header.Set("Authorization", driverKey)
 
 	// Make the request
-	client := &http.Client{}
+	client := httpx.Client()
 	res, err := client.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("error making HTTP request: %w", err)
@@ -143,7 +145,7 @@ func UploadFileAndGetURLWithReset(driverHubHost string, driverKey string, file *
 	req.Header.Set("Authorization", driverKey)
 
 	// Make the request
-	client := &http.Client{}
+	client := httpx.Client()
 	res, err := client.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("error making HTTP request: %w", err)

@@ -1,7 +1,6 @@
 package config
 
 import (
-	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -13,6 +12,7 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/Netsocs-Team/driver.sdk_go/pkg/httpx"
 	"github.com/Netsocs-Team/driver.sdk_go/pkg/tools"
 	"github.com/gorilla/websocket"
 )
@@ -198,12 +198,9 @@ func ListenConfig(host string, driverKey string, siteId string, token string, dr
 
 	log.Printf("connecting to %s", u.String())
 
-	// Create a custom dialer that accepts self-signed certificates
-	dialer := websocket.Dialer{
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: true,
-		},
-	}
+	// Shared dialer: honours the SDK TLS configuration (custom CA bundle or
+	// verification opt-out). See pkg/httpx.
+	dialer := httpx.WebsocketDialer()
 
 	c, _, err := dialer.Dial(u.String(), http.Header{
 		"Authorization": []string{driverKey},

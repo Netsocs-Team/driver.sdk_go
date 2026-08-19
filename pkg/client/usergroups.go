@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/go-resty/resty/v2"
+	"github.com/Netsocs-Team/driver.sdk_go/pkg/httpx"
 )
 
 // UserGroup representa un grupo de usuarios en Netsocs (DriverHub).
@@ -36,7 +36,7 @@ type UpdateUserGroupRequest struct {
 // Ver usergroups.md para la documentación de la API.
 func (c *NetsocsDriverClient) CreateUserGroup(req CreateUserGroupRequest) (UserGroup, error) {
 	url := c.driverHubHost + "/user-groups"
-	resp, err := resty.New().R().
+	resp, err := httpx.Resty().R().
 		SetHeader("Content-Type", "application/json").
 		SetHeader("X-Auth-Token", c.token).
 		SetBody(req).
@@ -57,7 +57,7 @@ func (c *NetsocsDriverClient) CreateUserGroup(req CreateUserGroupRequest) (UserG
 // GetUserGroups lista todos los grupos de usuarios del sitio.
 func (c *NetsocsDriverClient) GetUserGroups() ([]UserGroup, error) {
 	url := c.driverHubHost + "/user-groups"
-	resp, err := resty.New().R().
+	resp, err := httpx.Resty().R().
 		SetHeader("X-Auth-Token", c.token).
 		Get(url)
 	if err != nil {
@@ -76,7 +76,7 @@ func (c *NetsocsDriverClient) GetUserGroups() ([]UserGroup, error) {
 // GetUserGroup obtiene un grupo por ID.
 func (c *NetsocsDriverClient) GetUserGroup(id string) (UserGroup, error) {
 	url := c.driverHubHost + "/user-groups/" + id
-	resp, err := resty.New().R().
+	resp, err := httpx.Resty().R().
 		SetHeader("X-Auth-Token", c.token).
 		Get(url)
 	if err != nil {
@@ -95,7 +95,7 @@ func (c *NetsocsDriverClient) GetUserGroup(id string) (UserGroup, error) {
 // UpdateUserGroup actualiza un grupo de usuarios.
 func (c *NetsocsDriverClient) UpdateUserGroup(id string, req UpdateUserGroupRequest) (UserGroup, error) {
 	url := c.driverHubHost + "/user-groups/" + id
-	resp, err := resty.New().R().
+	resp, err := httpx.Resty().R().
 		SetHeader("Content-Type", "application/json").
 		SetHeader("X-Auth-Token", c.token).
 		SetBody(req).
@@ -116,7 +116,7 @@ func (c *NetsocsDriverClient) UpdateUserGroup(id string, req UpdateUserGroupRequ
 // DeleteUserGroup elimina un grupo de usuarios.
 func (c *NetsocsDriverClient) DeleteUserGroup(id string) error {
 	url := c.driverHubHost + "/user-groups/" + id
-	resp, err := resty.New().R().
+	resp, err := httpx.Resty().R().
 		SetHeader("X-Auth-Token", c.token).
 		Delete(url)
 	if err != nil {

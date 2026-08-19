@@ -7,6 +7,8 @@ import (
 	"sync"
 
 	"github.com/gorilla/websocket"
+
+	"github.com/Netsocs-Team/driver.sdk_go/pkg/httpx"
 )
 
 const (
@@ -164,7 +166,7 @@ func (s *speakerObject) startTalkback(payload []byte) (map[string]string, error)
 	}
 
 	wsURL := buildAudioStreamURL(s.controller.GetDriverhubHost(), p.SessionID)
-	ws, _, err := websocket.DefaultDialer.Dial(wsURL, wsDriverAuthHeader(s.controller.GetDriverKey()))
+	ws, _, err := httpx.WebsocketDialer().Dial(wsURL, wsDriverAuthHeader(s.controller.GetDriverKey()))
 	if err != nil {
 		return nil, fmt.Errorf("speaker: dial DriversHub audio stream: %w", err)
 	}

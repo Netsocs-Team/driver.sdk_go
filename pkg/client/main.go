@@ -9,9 +9,9 @@ import (
 	"os"
 
 	"github.com/Netsocs-Team/driver.sdk_go/pkg/config"
+	"github.com/Netsocs-Team/driver.sdk_go/pkg/httpx"
 	"github.com/Netsocs-Team/driver.sdk_go/pkg/objects"
 	"github.com/Netsocs-Team/driver.sdk_go/pkg/tools"
-	"github.com/go-resty/resty/v2"
 )
 
 type NetsocsDriverClient struct {
@@ -131,8 +131,7 @@ func (d *NetsocsDriverClient) GetChildren(parentId int) ([]Device, error) {
 	req.Header.Set("Authorization", d.driverKey)
 	req.Header.Set("X-Auth-Token", d.token)
 
-	client := &http.Client{}
-	res, err := client.Do(req)
+	res, err := httpx.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -219,7 +218,7 @@ type LicenseResponse struct {
 }
 
 func (d *NetsocsDriverClient) GetLicense() (LicenseResponse, error) {
-	resp, err := resty.New().R().SetHeader("X-Auth-Token", d.token).Get(d.driverHubHost + "/license")
+	resp, err := httpx.Resty().R().SetHeader("X-Auth-Token", d.token).Get(d.driverHubHost + "/license")
 	if err != nil {
 		return LicenseResponse{}, err
 	}
@@ -264,7 +263,7 @@ func (c *NetsocsDriverClient) DispatchEvent(domain string, eventKey string, even
 		req.Rels = append(req.Rels, fmt.Sprintf("/objects/%s", objID))
 	}
 
-	resp, err := resty.New().R().SetHeader("X-Auth-Token", c.token).SetBody(req).Post(c.driverHubHost + "/objects/events")
+	resp, err := httpx.Resty().R().SetHeader("X-Auth-Token", c.token).SetBody(req).Post(c.driverHubHost + "/objects/events")
 
 	if err != nil {
 		return "", err
@@ -275,7 +274,7 @@ func (c *NetsocsDriverClient) DispatchEvent(domain string, eventKey string, even
 
 func (c *NetsocsDriverClient) GetEvent(eventId string) (objects.EventRecord, error) {
 
-	resp, err := resty.New().R().SetHeader("X-Auth-Token", c.token).Get(c.driverHubHost + "/objects/events/" + eventId)
+	resp, err := httpx.Resty().R().SetHeader("X-Auth-Token", c.token).Get(c.driverHubHost + "/objects/events/" + eventId)
 	if err != nil {
 		return objects.EventRecord{}, err
 	}
@@ -322,7 +321,7 @@ func (c *NetsocsDriverClient) PatchEvent(eventId string, event objects.EventReco
 		}
 	}
 
-	resp, err := resty.New().R().SetHeader("X-Auth-Token", c.token).SetBody(currentEvent).Put(c.driverHubHost + "/objects/events/" + eventId)
+	resp, err := httpx.Resty().R().SetHeader("X-Auth-Token", c.token).SetBody(currentEvent).Put(c.driverHubHost + "/objects/events/" + eventId)
 	if err != nil {
 		return err
 	}
@@ -338,7 +337,7 @@ func (c *NetsocsDriverClient) SetObjectsBatchState(states []objects.ObjectStateC
 	body := objects.ChangeStateBatchRequest{
 		Changes: states,
 	}
-	resp, err := resty.New().R().SetHeader("X-Auth-Token", c.token).SetBody(body).Put(c.driverHubHost + "/objects/states-batch")
+	resp, err := httpx.Resty().R().SetHeader("X-Auth-Token", c.token).SetBody(body).Put(c.driverHubHost + "/objects/states-batch")
 	if err != nil {
 		return []objects.ChangeStateBatchResponse{}, err
 	}

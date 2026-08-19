@@ -5,7 +5,7 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/go-resty/resty/v2"
+	"github.com/Netsocs-Team/driver.sdk_go/pkg/httpx"
 )
 
 type DeviceState string
@@ -53,7 +53,7 @@ type Metadata struct {
 }
 
 func (d *NetsocsDriverClient) GetDeviceState(deviceId int) (DeviceStateItem, error) {
-	resp, err := resty.New().R().SetHeader("X-Auth-Token", d.token).Get(d.driverHubHost + "/devices/" + "states/" + strconv.Itoa(deviceId))
+	resp, err := httpx.Resty().R().SetHeader("X-Auth-Token", d.token).Get(d.driverHubHost + "/devices/" + "states/" + strconv.Itoa(deviceId))
 	if err != nil {
 		return DeviceStateItem{}, err
 	}
@@ -71,7 +71,7 @@ func (d *NetsocsDriverClient) GetDeviceState(deviceId int) (DeviceStateItem, err
 }
 
 func (d *NetsocsDriverClient) SetDeviceState(deviceId int, state DeviceState) (DeviceStateResponse, error) {
-	resp, err := resty.New().R().SetHeader("X-Auth-Token", d.token).SetBody(map[string]interface{}{
+	resp, err := httpx.Resty().R().SetHeader("X-Auth-Token", d.token).SetBody(map[string]interface{}{
 		"state": state,
 	}).Put(d.driverHubHost + "/devices/" + "states/" + strconv.Itoa(deviceId))
 	if err != nil {

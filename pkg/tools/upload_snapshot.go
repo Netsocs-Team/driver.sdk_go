@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"path/filepath"
 	"strings"
+
+	"github.com/Netsocs-Team/driver.sdk_go/pkg/httpx"
 )
 
 // SnapshotUploadResponse is the response from the DriverHub /snapshots/upload endpoint.
@@ -64,7 +66,7 @@ func UploadSnapshot(driverHubHost, driverKey string, r io.Reader, filename strin
 	req.Header.Set("Content-Type", contentType)
 	req.Header.Set("Authorization", driverKey)
 
-	client := &http.Client{}
+	client := httpx.Client()
 	res, err := client.Do(req)
 	if err != nil {
 		return empty, fmt.Errorf("error making HTTP request: %w", err)

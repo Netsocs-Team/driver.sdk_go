@@ -3,7 +3,6 @@ package event
 import (
 	"bytes"
 	"fmt"
-	"net/http"
 	"os"
 	"strconv"
 )
@@ -34,7 +33,7 @@ func (e *EventDispatcher) Dispatch(eventKey string, deviceID int) error {
 	body := []byte(bodyString)
 	bodyReader := bytes.NewReader(body)
 
-	_, err := http.Post(fmt.Sprintf("http://%s:%d/v1/topologia/misc/%s", e.host, e.port, eventKey), "application/json", bodyReader)
+	err := postEvent(e.host, e.port, eventKey, bodyReader)
 	return err
 }
 func (e *EventDispatcher) DispatchWithOriginalValue(eventKey string, deviceID int, originalValue string) error {
@@ -42,7 +41,7 @@ func (e *EventDispatcher) DispatchWithOriginalValue(eventKey string, deviceID in
 	body := []byte(bodyString)
 	bodyReader := bytes.NewReader(body)
 
-	_, err := http.Post(fmt.Sprintf("http://%s:%d/v1/topologia/misc/%s", e.host, e.port, eventKey), "application/json", bodyReader)
+	err := postEvent(e.host, e.port, eventKey, bodyReader)
 	return err
 }
 
@@ -50,16 +49,14 @@ func (e *EventDispatcher) DispatchWithChannels(eventKey string, deviceID int, ch
 	bodyString := fmt.Sprintf(`{"deviceId": %d, "deviceByProps": [ "\"parentDevice\": %d", "\"channelNumber\": %d"]}`, deviceID, deviceID, channelNumber)
 	body := []byte(bodyString)
 	bodyReader := bytes.NewReader(body)
-	_, err := http.Post(fmt.Sprintf("http://%s:%d/v1/topologia/misc/%s", e.host, e.port, eventKey), "application/json",
-		bodyReader)
+	err := postEvent(e.host, e.port, eventKey, bodyReader)
 	return err
 }
 func (e *EventDispatcher) DispatchWithChannelsAndOriginalValue(eventKey string, deviceID int, channelNumber int, originalValue string) error {
 	bodyString := fmt.Sprintf(`{"deviceId": %d, "deviceByProps": [ "\"parentDevice\": %d", "\"channelNumber\": %d"], "originalValue": "%s"}`, deviceID, deviceID, channelNumber, originalValue)
 	body := []byte(bodyString)
 	bodyReader := bytes.NewReader(body)
-	_, err := http.Post(fmt.Sprintf("http://%s:%d/v1/topologia/misc/%s", e.host, e.port, eventKey), "application/json",
-		bodyReader)
+	err := postEvent(e.host, e.port, eventKey, bodyReader)
 	return err
 }
 
@@ -71,8 +68,7 @@ func (e *EventDispatcher) DispatchWithPersonIDAndOriginalValue(eventKey string, 
 	bodyString := fmt.Sprintf(`{"deviceId": %d, "originalValue": "%s", "userType": %d, "userId": %d}`, deviceID, originalValue, userType, userId)
 	body := []byte(bodyString)
 	bodyReader := bytes.NewReader(body)
-	_, err = http.Post(fmt.Sprintf("http://%s:%d/v1/topologia/misc/%s", e.host, e.port, eventKey), "application/json",
-		bodyReader)
+	err = postEvent(e.host, e.port, eventKey, bodyReader)
 	return err
 }
 
@@ -84,13 +80,12 @@ func (e *EventDispatcher) DispatchWithPersonID(eventKey string, deviceID int, pe
 	bodyString := fmt.Sprintf(`{"deviceId": %d, "userType": %d, "userId": %d}`, deviceID, userType, userId)
 	body := []byte(bodyString)
 	bodyReader := bytes.NewReader(body)
-	_, err = http.Post(fmt.Sprintf("http://%s:%d/v1/topologia/misc/%s", e.host, e.port, eventKey), "application/json",
-		bodyReader)
+	err = postEvent(e.host, e.port, eventKey, bodyReader)
 	return err
 }
 
 func (e *EventDispatcher) DispatchWithFile(eventKey string, deviceID int, file os.File) error {
-	_, err := http.Post(fmt.Sprintf("http://%s:%d/v1/topologia/misc/%s", e.host, e.port, eventKey), "application/json", &file)
+	err := postEvent(e.host, e.port, eventKey, &file)
 	return err
 }
 

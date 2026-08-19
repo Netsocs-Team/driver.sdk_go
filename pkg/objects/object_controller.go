@@ -1,7 +1,6 @@
 package objects
 
 import (
-	"crypto/tls"
 	"errors"
 	"fmt"
 	"net/http"
@@ -10,11 +9,11 @@ import (
 	"strings"
 
 	"github.com/Netsocs-Team/driver.sdk_go/internal/eventbus"
+	"github.com/Netsocs-Team/driver.sdk_go/pkg/httpx"
 	"github.com/Netsocs-Team/driver.sdk_go/pkg/logger"
 	"github.com/Netsocs-Team/driver.sdk_go/pkg/tools"
 	"github.com/go-resty/resty/v2"
 	"github.com/goccy/go-json"
-	"github.com/gorilla/websocket"
 )
 
 type ObjectController interface {
@@ -329,12 +328,9 @@ func (o *objectController) ListenActionRequests() error {
 	// Convert the URL using the utility function
 	url := tools.ConvertToWebSocketURL(o.driverhub_host, "objects/ws")
 
-	// Create a custom dialer that accepts self-signed certificates
-	dialer := websocket.Dialer{
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: true,
-		},
-	}
+	// Shared dialer: honours the SDK TLS configuration (custom CA bundle or
+	// verification opt-out). See pkg/httpx.
+	dialer := httpx.WebsocketDialer()
 
 	c, _, err := dialer.Dial(url, http.Header{
 		"X-Auth-Token": []string{o.token},
@@ -481,7 +477,7 @@ func NewObjectController(driverhubHost string, driverKey string) ObjectControlle
 	return &objectController{
 		driverhub_host: driverhubHost,
 		driver_key:     driverKey,
-		httpClient:     resty.New(),
+		httpClient:     httpx.Resty(),
 		token:          fileData.Token,
 	}
 }

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/go-resty/resty/v2"
+	"github.com/Netsocs-Team/driver.sdk_go/pkg/httpx"
 )
 
 // ObjectGroup represents a group of objects/devices in Netsocs (DriverHub).
@@ -95,7 +95,7 @@ func (c *NetsocsDriverClient) CreateObjectGroup(req CreateObjectGroupRequest, pa
 		req.ParentID = parentID[0]
 	}
 	url := c.driverHubHost + "/groups"
-	resp, err := resty.New().R().
+	resp, err := httpx.Resty().R().
 		SetHeader("Content-Type", "application/json").
 		SetHeader("X-Auth-Token", c.token).
 		SetBody(req).
@@ -116,7 +116,7 @@ func (c *NetsocsDriverClient) CreateObjectGroup(req CreateObjectGroupRequest, pa
 // GetObjectGroup retrieves an object group by its ID.
 func (c *NetsocsDriverClient) GetObjectGroup(id string) (ObjectGroup, error) {
 	url := c.driverHubHost + "/groups/" + id
-	resp, err := resty.New().R().
+	resp, err := httpx.Resty().R().
 		SetHeader("X-Auth-Token", c.token).
 		Get(url)
 	if err != nil {
@@ -135,7 +135,7 @@ func (c *NetsocsDriverClient) GetObjectGroup(id string) (ObjectGroup, error) {
 // UpdateObjectGroup updates an existing object group.
 func (c *NetsocsDriverClient) UpdateObjectGroup(id string, req UpdateObjectGroupRequest) (ObjectGroup, error) {
 	url := c.driverHubHost + "/groups/" + id
-	resp, err := resty.New().R().
+	resp, err := httpx.Resty().R().
 		SetHeader("Content-Type", "application/json").
 		SetHeader("X-Auth-Token", c.token).
 		SetBody(req).
@@ -156,7 +156,7 @@ func (c *NetsocsDriverClient) UpdateObjectGroup(id string, req UpdateObjectGroup
 // DeleteObjectGroup deletes (soft delete) an object group by ID.
 func (c *NetsocsDriverClient) DeleteObjectGroup(id string) error {
 	url := c.driverHubHost + "/groups/" + id
-	resp, err := resty.New().R().
+	resp, err := httpx.Resty().R().
 		SetHeader("X-Auth-Token", c.token).
 		Delete(url)
 	if err != nil {
@@ -172,7 +172,7 @@ func (c *NetsocsDriverClient) DeleteObjectGroup(id string) error {
 // with all levels loaded recursively.
 func (c *NetsocsDriverClient) GetObjectGroupTree() ([]ObjectGroupTree, error) {
 	url := c.driverHubHost + "/groups/tree"
-	resp, err := resty.New().R().
+	resp, err := httpx.Resty().R().
 		SetHeader("X-Auth-Token", c.token).
 		Get(url)
 	if err != nil {
@@ -194,7 +194,7 @@ func (c *NetsocsDriverClient) GetObjectGroupTree() ([]ObjectGroupTree, error) {
 // Each node includes navigation links (ChildrenLink, GroupLink).
 func (c *NetsocsDriverClient) GetObjectGroupChildren(parentID string) ([]ObjectGroupTreeNode, error) {
 	url := c.driverHubHost + "/groups/tree/children/" + parentID
-	resp, err := resty.New().R().
+	resp, err := httpx.Resty().R().
 		SetHeader("X-Auth-Token", c.token).
 		Get(url)
 	if err != nil {

@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/go-resty/resty/v2"
+	"github.com/Netsocs-Team/driver.sdk_go/pkg/httpx"
 )
 
 func (d *NetsocsDriverClient) WriteLog(deviceId int, log string, params ...string) (*http.Response, error) {
@@ -20,7 +20,7 @@ func (d *NetsocsDriverClient) WriteLog(deviceId int, log string, params ...strin
 		action = params[0]
 	}
 
-	resp, err := resty.New().R().
+	resp, err := httpx.Resty().R().
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Authorization", fmt.Sprintf("Bearer %s", d.token)).
 		SetHeader("X-Auth-Token", d.token).

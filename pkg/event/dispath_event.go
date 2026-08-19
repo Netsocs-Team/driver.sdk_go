@@ -3,7 +3,6 @@ package event
 import (
 	"bytes"
 	"fmt"
-	"net/http"
 )
 
 type Dispatcher struct {
@@ -86,7 +85,7 @@ func (e *Dispatcher) DispatchAndResetFields(eventKey string) error {
 
 	buff = buff[:len(buff)-1] + "}"
 	body := []byte(buff)
-	_, err := http.Post(fmt.Sprintf("http://%s:%d/v1/topologia/misc/%s", e.Host, e.Port, eventKey), "application/json", bytes.NewReader(body))
+	err := postEvent(e.Host, e.Port, eventKey, bytes.NewReader(body))
 
 	// Reset fields
 	e.imageURL = nil
