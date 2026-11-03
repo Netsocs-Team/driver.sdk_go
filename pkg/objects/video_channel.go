@@ -252,6 +252,11 @@ type SeekPayload struct {
 	VideoEngineHostname string `json:"video_engine_hostname"`
 	// video_engine_rtsp_port
 	VideoEngineRtspPort string `json:"video_engine_rtsp_port"`
+	// PublishToken authorizes the WHIP publication of PlaybackID. Send it as
+	// "Authorization: Bearer <PublishToken>" on the WHIP POST and DELETE (in the
+	// rtpwebrtc publishers: WHIPConfig.BearerToken). Empty with a DriverHub that
+	// does not issue tokens; then publish without it, as before.
+	PublishToken string `json:"publish_token,omitempty"`
 }
 
 type videoChannelObject struct {
@@ -649,6 +654,13 @@ type RequestDolynkStreamURLResponse struct {
 
 type PublishStreamStartPayload struct {
 	Quality string `json:"quality,omitempty"` // "sub" = stream 102; "" or "main" = stream 101
+	// PublishToken authorizes the WHIP publication of this object's stream
+	// ("<objectID>" or "<objectID>.sub"). Send it as "Authorization: Bearer
+	// <PublishToken>" on the WHIP POST and DELETE (in the rtpwebrtc publishers:
+	// WHIPConfig.BearerToken). DriverHub with WHIP_AUTH=enforce rejects a
+	// publication without it. Empty with a DriverHub that does not issue
+	// tokens; then publish without it, as before.
+	PublishToken string `json:"publish_token,omitempty"`
 }
 
 type PublishStreamStopPayload struct {
