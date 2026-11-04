@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/Netsocs-Team/driver.sdk_go/pkg/httpx"
+	"github.com/go-resty/resty/v2"
 )
 
 type driverHubVersionResponse struct {
@@ -47,7 +48,7 @@ func (n *NetsocsDriverClient) RTSPToStreamID(rtsp string, streamID string, opts 
 		req.Payload.Record = opts[0].Record
 	}
 
-	resp, err := httpx.Resty().R().SetBody(req).Post(fmt.Sprintf("%s/objects/actions/executions/%s/rtsp_to_stream_id", n.driverHubHost, videoEngineDefaultDomain))
+	resp, err := n.videoEngineRequest().SetBody(req).Post(fmt.Sprintf("%s/objects/actions/executions/%s/rtsp_to_stream_id", n.driverHubHost, videoEngineDefaultDomain))
 
 	if err != nil {
 		return "", err
@@ -70,7 +71,7 @@ func (n *NetsocsDriverClient) HTTPToStreamID(httpUrl string, streamID string) (v
 	req.ObjectID = []string{videoEngineDefaultId}
 	req.Payload.RtspSource = httpUrl
 	req.Payload.StreamID = streamID
-	resp, err := httpx.Resty().R().SetBody(req).Post(fmt.Sprintf("%s/objects/actions/executions/%s/http_to_stream_id", n.driverHubHost, videoEngineDefaultDomain))
+	resp, err := n.videoEngineRequest().SetBody(req).Post(fmt.Sprintf("%s/objects/actions/executions/%s/http_to_stream_id", n.driverHubHost, videoEngineDefaultDomain))
 
 	if err != nil {
 		return "", err
@@ -91,7 +92,7 @@ func (n *NetsocsDriverClient) PublishToStreamID(streamID string) (videoEngine st
 	req := publishToStreamIdRequest{}
 	req.ObjectID = []string{videoEngineDefaultId}
 	req.Payload.StreamID = streamID
-	resp, err := httpx.Resty().R().SetBody(req).Post(fmt.Sprintf("%s/objects/actions/executions/%s/publish_to_stream_id", n.driverHubHost, videoEngineDefaultDomain))
+	resp, err := n.videoEngineRequest().SetBody(req).Post(fmt.Sprintf("%s/objects/actions/executions/%s/publish_to_stream_id", n.driverHubHost, videoEngineDefaultDomain))
 
 	if err != nil {
 		return "", err
@@ -101,4 +102,13 @@ func (n *NetsocsDriverClient) PublishToStreamID(streamID string) (videoEngine st
 		return "", fmt.Errorf("error converting http to stream id: %s", resp.String())
 	}
 	return videoEngineDefaultId, nil
+}
+
+// videoEngineRequest carries the same credentials as the other DriverHub
+// calls. Without them, a gateway that authenticates /api/netsocs/dh answers
+// 401 and the driver cannot register its video sources.
+func (n *NetsocsDriverClient) videoEngineRequest() *resty.Request {
+	return httpx.Resty().R().
+		SetHeader("Authorization", n.driverKey).
+		SetHeader("X-Auth-Token", n.token)
 }
