@@ -44,3 +44,34 @@ cli := httpx.NewClient(10 * time.Second)     // cliente con timeout
 
 `httpx.CloneTransport()` devuelve una copia privada del transport para casos que
 necesiten personalizarlo sin afectar al resto del SDK.
+
+## Verificar la central (`ca_mode`, desde v0.8.0-rc.2)
+
+Lo anterior no verifica el certificado. Cuando SmartConnect registra el driver
+con una central que publica su CA, el bloque `auth` de `driver.netsocs.json`
+dice cómo verificarla:
+
+```json
+"auth": { "client_id": "drv-…", "token_url": "https://…", "key_file": "driver.key",
+          "ca_file": "central-ca.pem", "ca_mode": "pinned" }
+```
+
+| `ca_mode` | Conexiones al DriverHub y a `token_url` |
+| --- | --- |
+| `pinned` | Solo se confía en la CA raíz de `ca_file` (PEM, relativo a `driver.netsocs.json`). Se verifican la cadena y el nombre del host (DNS o IP) |
+| `public` | Raíces del sistema, verificación normal |
+| ausente | Sin verificar, igual que v0.8.0-rc.1 (centrales antiguas); `ca_file` se ignora |
+
+Con `ca_mode`, `driver_hub_host` y `token_url` deben ser `https://` y el SDK
+rechaza cualquier `http://`/`ws://` a esos hosts. Si `ca_mode` es desconocido,
+falta `ca_file` en `pinned` o no contiene un certificado PEM, el driver sale
+con el código 78 antes de hacer ninguna petición: nunca vuelve al modo sin
+verificar. Un certificado que no valida no es fatal: el SDK reintenta con
+espera creciente y lo registra en el log.
+
+Solo cambian las conexiones a los hosts de la central. El resto (cámaras y
+otros dispositivos por HTTPS con `httpx.Client()`) sigue igual. `httpx.Client()`,
+`httpx.NewClient()`, `httpx.Resty()`, `httpx.RoundTripper()` y
+`httpx.DialWebsocket()` aplican la política; `httpx.Transport()`,
+`httpx.CloneTransport()` y `httpx.WebsocketDialer()` llevan siempre la
+configuración antigua.

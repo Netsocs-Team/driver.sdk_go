@@ -6,6 +6,7 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/sha256"
+	"crypto/tls"
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
@@ -53,8 +54,13 @@ type central struct {
 }
 
 func newCentral(t *testing.T, key *ecdsa.PublicKey) *central {
+	return newCentralTLS(t, key, nil)
+}
+
+// newCentralTLS serves the central over TLS with cfg (plain HTTP if nil).
+func newCentralTLS(t *testing.T, key *ecdsa.PublicKey, cfg *tls.Config) *central {
 	c := &central{key: key}
-	c.srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	c.srv = httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case r.URL.Path == "/api/netsocs/dh/auth/capabilities":
 			switch atomic.LoadInt32(&c.caps) {
@@ -88,6 +94,12 @@ func newCentral(t *testing.T, key *ecdsa.PublicKey) *central {
 			http.NotFound(w, r)
 		}
 	}))
+	if cfg != nil {
+		c.srv.TLS = cfg
+		c.srv.StartTLS()
+	} else {
+		c.srv.Start()
+	}
 	t.Cleanup(c.srv.Close)
 	return c
 }

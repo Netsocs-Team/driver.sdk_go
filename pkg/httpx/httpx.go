@@ -12,6 +12,11 @@
 // every REST call, upload and event dispatch now goes through the transport
 // built here, so all of them behave the same way and work out of the box, with
 // no configuration.
+//
+// When driver.netsocs.json says how to trust the central (ca_mode, contract
+// C1), SecureCentral switches the connections to the central's hosts
+// (DriverHub, Keycloak) to full certificate and host name verification; the
+// other hosts keep this configuration.
 package httpx
 
 import (
@@ -28,8 +33,9 @@ var (
 	client    *http.Client
 )
 
-// TLSConfig returns the TLS configuration used by the SDK. The returned value
-// is a fresh copy, safe to mutate by the caller.
+// TLSConfig returns the legacy TLS configuration of the SDK, used for every
+// host that SecureCentral does not cover (TLSConfigFor picks the right one).
+// The returned value is a fresh copy, safe to mutate by the caller.
 func TLSConfig() *tls.Config {
 	return &tls.Config{
 		// The DriverHub is commonly served with a self-signed certificate or
@@ -42,7 +48,7 @@ func TLSConfig() *tls.Config {
 func initShared() {
 	once.Do(func() {
 		transport = newTransport()
-		client = &http.Client{Transport: authRoundTripper{transport}}
+		client = &http.Client{Transport: authRoundTripper{router{}}}
 	})
 }
 
@@ -65,15 +71,17 @@ func newTransport() *http.Transport {
 	return t
 }
 
-// Transport returns the shared *http.Transport. Do not mutate it; use
-// CloneTransport when a customized copy is needed.
+// Transport returns the shared *http.Transport with the legacy TLS
+// configuration; it does not apply SecureCentral (Client, NewClient, Resty
+// and RoundTripper do). Do not mutate it; use CloneTransport when a
+// customized copy is needed.
 func Transport() *http.Transport {
 	initShared()
 	return transport
 }
 
-// CloneTransport returns a private copy of the SDK transport, ready to be
-// customized without affecting other callers.
+// CloneTransport returns a private copy of the legacy SDK transport, ready to
+// be customized without affecting other callers.
 func CloneTransport() *http.Transport {
 	return newTransport()
 }
@@ -88,7 +96,7 @@ func Client() *http.Client {
 // NewClient returns a new *http.Client sharing the SDK transport, with the
 // given timeout (zero means no timeout).
 func NewClient(timeout time.Duration) *http.Client {
-	return &http.Client{Transport: authRoundTripper{Transport()}, Timeout: timeout}
+	return &http.Client{Transport: authRoundTripper{router{}}, Timeout: timeout}
 }
 
 // Do performs the request with the shared client.

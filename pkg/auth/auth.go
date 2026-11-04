@@ -40,6 +40,10 @@ type Config struct {
 	KeyFile  string `json:"key_file"`      // PEM private key, relative to driver.netsocs.json
 	Alg      string `json:"alg,omitempty"` // ES256 (default) or RS256
 	DriverID string `json:"driver_id,omitempty"`
+	// How to verify the TLS of the central (DriverHub and token_url), contract
+	// C1. Absent: unverified, as in v0.8.0-rc.1, for old centrals.
+	CAFile string `json:"ca_file,omitempty"` // PEM root CA for "pinned", relative to driver.netsocs.json
+	CAMode string `json:"ca_mode,omitempty"` // "pinned" or "public"
 }
 
 // Valid reports whether the block is complete.
@@ -54,7 +58,7 @@ const (
 	ExitRestart      = 75 // close 4000: restart requested by DriverHub
 	ExitTokenExpired = 76 // close 4001: token expired or reauth rejected
 	ExitRevoked      = 77 // close 4003: identity revoked, do not restart
-	ExitDowngrade    = 78 // the central stopped accepting JWTs after this driver used them
+	ExitDowngrade    = 78 // the central stopped accepting JWTs after this driver used them, or its TLS settings are unusable
 )
 
 // Provider holds the driver key and the current access token.
@@ -99,7 +103,7 @@ func NewProvider(cfg Config, baseDir, driverKey, driverHubHost string) (*Provide
 	return &Provider{
 		cfg: cfg, signer: signer, alg: alg, driverKey: driverKey, hub: hub,
 		// Not the hooked SDK client: the token request must not carry a token.
-		httpc: &http.Client{Timeout: 20 * time.Second, Transport: httpx.CloneTransport()},
+		httpc: &http.Client{Timeout: 20 * time.Second, Transport: httpx.RoundTripper()},
 		now:   time.Now,
 	}, nil
 }

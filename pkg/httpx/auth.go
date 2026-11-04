@@ -46,13 +46,21 @@ func (a authRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 }
 
 // DialWebsocket dials with the SDK dialer after applying the hook to the
-// handshake headers.
+// handshake headers. To the central (SecureCentral) it verifies the
+// certificate and refuses ws://.
 func DialWebsocket(rawURL string, h http.Header) (*websocket.Conn, *http.Response, error) {
 	if h == nil {
 		h = http.Header{}
 	}
+	d := WebsocketDialer()
 	if u, err := url.Parse(rawURL); err == nil {
+		if c := policyFor(u); c != nil {
+			if err := checkScheme(u); err != nil {
+				return nil, nil, err
+			}
+			d.TLSClientConfig = c.tls.Clone()
+		}
 		ApplyAuth(u, h)
 	}
-	return WebsocketDialer().Dial(rawURL, h)
+	return d.Dial(rawURL, h)
 }

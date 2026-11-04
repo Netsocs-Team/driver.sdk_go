@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -27,8 +28,9 @@ var errOldCentral = errors.New("central does not accept driver JWTs")
 
 // ErrDowngrade: this driver used JWTs with this central before and now the
 // central says it does not accept them. It may be a rollback of the central
-// or someone in the middle answering 404 to force the old mode (the SDK does
-// not verify TLS yet): it needs a person to look, so the driver stops.
+// or someone in the middle answering 404 to force the old mode (possible
+// when the auth block has no ca_mode, since TLS is then not verified): it
+// needs a person to look, so the driver stops.
 var ErrDowngrade = errors.New("auth: the central stopped accepting driver JWTs after this driver used them; " +
 	"if the central was rolled back on purpose, delete " + StateFile + " next to driver.netsocs.json")
 
@@ -70,7 +72,7 @@ func discover(ctx context.Context, hub string) (Capabilities, error) {
 	if err != nil {
 		return Capabilities{}, err
 	}
-	c := &http.Client{Timeout: 15 * time.Second, Transport: httpx.CloneTransport()}
+	c := &http.Client{Timeout: 15 * time.Second, Transport: httpx.RoundTripper()}
 	resp, err := c.Do(req)
 	if err != nil {
 		return Capabilities{}, err
@@ -114,6 +116,10 @@ func Setup(ctx context.Context, cfg *Config, dir, driverKey, driverHubHost strin
 	if err != nil {
 		return "", nil, err
 	}
+	// Before the first request: discovery already goes to the DriverHub.
+	if err := secureCentral(*cfg, dir, driverHubHost, logf); err != nil {
+		return "", nil, err
+	}
 
 	wait := time.Second
 	for {
@@ -148,4 +154,50 @@ func Setup(ctx context.Context, cfg *Config, dir, driverKey, driverHubHost strin
 	Activate(p)
 	logf("auth: connected as %s (Keycloak identity)", cfg.ClientID)
 	return ModeJWT, p, nil
+}
+
+// ErrTLSConfig: the auth block asks for verified TLS (ca_mode) and it cannot
+// be applied. The SDK never falls back to unverified TLS in that case.
+var ErrTLSConfig = errors.New("auth: unusable TLS settings in the auth block")
+
+// secureCentral applies ca_mode/ca_file (contract C1) to every SDK
+// connection to the DriverHub and to the token endpoint. Without ca_mode it
+// does nothing: unverified TLS, as in v0.8.0-rc.1.
+func secureCentral(cfg Config, dir, driverHubHost string, logf func(string, ...any)) error {
+	if cfg.CAMode == "" {
+		if cfg.CAFile != "" {
+			logf("auth: ca_file without ca_mode is ignored: the central's TLS is not verified")
+		}
+		return httpx.SecureCentral("", nil)
+	}
+	var hosts []string
+	for _, raw := range []string{driverHubHost, cfg.TokenURL} {
+		u, err := url.Parse(raw)
+		if err != nil || u.Hostname() == "" {
+			return fmt.Errorf("%w: invalid URL %q", ErrTLSConfig, raw)
+		}
+		if !strings.EqualFold(u.Scheme, "https") {
+			return fmt.Errorf("%w: %s must be https:// with ca_mode %q", ErrTLSConfig, raw, cfg.CAMode)
+		}
+		hosts = append(hosts, u.Hostname())
+	}
+	var caPEM []byte
+	if cfg.CAMode == httpx.CAModePinned {
+		if cfg.CAFile == "" {
+			return fmt.Errorf("%w: ca_mode %q needs ca_file", ErrTLSConfig, cfg.CAMode)
+		}
+		path := cfg.CAFile
+		if !filepath.IsAbs(path) {
+			path = filepath.Join(dir, path)
+		}
+		var err error
+		if caPEM, err = os.ReadFile(filepath.Clean(path)); err != nil {
+			return fmt.Errorf("%w: ca_file: %v", ErrTLSConfig, err)
+		}
+	}
+	if err := httpx.SecureCentral(cfg.CAMode, caPEM, hosts...); err != nil {
+		return fmt.Errorf("%w: %v", ErrTLSConfig, err)
+	}
+	logf("auth: TLS of the central verified (ca_mode %s)", cfg.CAMode)
+	return nil
 }

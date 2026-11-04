@@ -7,5 +7,5 @@ import "github.com/go-resty/resty/v2"
 //
 // Use it instead of resty.New() anywhere the SDK talks to the DriverHub.
 func Resty() *resty.Client {
-	return resty.New().SetTransport(authRoundTripper{Transport()})
+	return resty.New().SetTransport(authRoundTripper{router{}})
 }
