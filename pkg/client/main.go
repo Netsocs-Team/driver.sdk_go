@@ -118,6 +118,16 @@ func New() (*NetsocsDriverClient, error) {
 	// The identity must be ready before the first socket opens
 	// (NewNetsocsDriverClient connects to objects/ws right away).
 	if _, _, err := auth.Setup(context.Background(), fileData.Auth, ".", fileData.DriverKey, fileData.DriverHubHost, log.Printf); err != nil {
+		// These two are final whatever the driver does with the error: the
+		// exit code tells the supervisor not to restart in a loop.
+		switch {
+		case errors.Is(err, auth.ErrRejected):
+			log.Printf("%v: the driver identity was revoked or is wrong, exiting with %d", err, auth.ExitRevoked)
+			os.Exit(auth.ExitRevoked)
+		case errors.Is(err, auth.ErrDowngrade):
+			log.Printf("%v: exiting with %d", err, auth.ExitDowngrade)
+			os.Exit(auth.ExitDowngrade)
+		}
 		return nil, err
 	}
 
