@@ -3,12 +3,9 @@ package objects
 import (
 	"errors"
 	"fmt"
-	"net/http"
-	"reflect"
 	"strconv"
 	"strings"
 
-	"github.com/Netsocs-Team/driver.sdk_go/internal/eventbus"
 	"github.com/Netsocs-Team/driver.sdk_go/pkg/httpx"
 	"github.com/Netsocs-Team/driver.sdk_go/pkg/logger"
 	"github.com/Netsocs-Team/driver.sdk_go/pkg/tools"
@@ -38,6 +35,7 @@ type objectController struct {
 	driver_key     string
 	token          string
 	httpClient     *resty.Client
+	actions        *actionsChannel
 }
 
 // GetState implements ObjectController.
@@ -321,53 +319,6 @@ type wsMessage struct {
 	Domain    string `json:"domain"`
 }
 
-// ListenActionRequests implements ObjectController.
-func (o *objectController) ListenActionRequests() error {
-	_logger := logger.Logger()
-
-	// Convert the URL using the utility function
-	url := tools.ConvertToWebSocketURL(o.driverhub_host, "objects/ws")
-
-	// Shared dialer: honours the SDK TLS configuration (custom CA bundle or
-	// verification opt-out). See pkg/httpx.
-	dialer := httpx.WebsocketDialer()
-
-	c, _, err := dialer.Dial(url, http.Header{
-		"X-Auth-Token": []string{o.token},
-	})
-	if err != nil {
-		return err
-	}
-	defer c.Close()
-
-	subscribeHandler := func(data interface{}) {
-		domain := reflect.ValueOf(data).FieldByName("Domain")
-		if domain.IsValid() {
-			writeErr := c.WriteJSON(wsMessage{EventType: "REQUEST_SUBSCRIPTION_TO_DOMAIN", Domain: domain.String()})
-			if writeErr != nil {
-				_logger.Error(writeErr)
-			}
-		}
-	}
-	eventbus.Pubsub.Subscribe("SUBSCRIBE_OBJECTS_COMMANDS_LISTENING", subscribeHandler)
-	defer eventbus.Pubsub.Unsubscribe("SUBSCRIBE_OBJECTS_COMMANDS_LISTENING", subscribeHandler)
-
-	done := make(chan struct{})
-	defer close(done)
-	for {
-		_, message, err := c.ReadMessage()
-		if err != nil {
-			return nil
-		}
-		msg := wsMessage{}
-		json.Unmarshal(message, &msg)
-		if msg.EventType == "REQUEST_ACTION_EXECUTION" {
-			go eventbus.Pubsub.Publish("REQUEST_ACTION_EXECUTION", msg.Data)
-		}
-	}
-
-}
-
 type newObjectRequest struct {
 	ID               string   `json:"id"`
 	Domain           string   `json:"domain"`
@@ -479,5 +430,6 @@ func NewObjectController(driverhubHost string, driverKey string) ObjectControlle
 		driver_key:     driverKey,
 		httpClient:     httpx.Resty(),
 		token:          fileData.Token,
+		actions:        newActionsChannel(),
 	}
 }
