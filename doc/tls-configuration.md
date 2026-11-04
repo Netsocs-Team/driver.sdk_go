@@ -58,7 +58,7 @@ dice cómo verificarla:
 
 | `ca_mode` | Conexiones al DriverHub y a `token_url` |
 | --- | --- |
-| `pinned` | Solo se confía en la CA raíz de `ca_file` (PEM, relativo a `driver.netsocs.json`). Se verifican la cadena y el nombre del host (DNS o IP) |
+| `pinned` | Solo se confía en la CA raíz de `ca_file` (PEM, relativo a `driver.netsocs.json`). Se verifican la cadena y el nombre del host (DNS o IP). Si la CA es la de Caddy de la propia central ("Caddy Local Authority"), solo la cadena: esa CA es única de la instalación y sus llaves no salen de Caddy, y en instalaciones locales usadas por IP Caddy pone en el certificado la IP del contenedor |
 | `public` | Raíces del sistema, verificación normal |
 | ausente | Sin verificar, igual que v0.8.0-rc.1 (centrales antiguas); `ca_file` se ignora |
 

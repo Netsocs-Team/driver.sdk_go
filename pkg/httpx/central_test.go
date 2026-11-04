@@ -101,6 +101,34 @@ func TestPinnedRejectsTheWrongHostName(t *testing.T) {
 	}
 }
 
+// A central's own Caddy CA: reached by IP, Caddy names the container's
+// address, so the name is not checked; the chain still is.
+func TestPinnedCaddyRootAcceptsAnotherName(t *testing.T) {
+	ca := testpki.NewCA(t, "Caddy Local Authority - 2026 ECC Root")
+	srv := newCentral(t, ca.Server(t, "172.18.0.6"))
+	secure(t, httpx.CAModePinned, ca.PEM, "127.0.0.1")
+	if err := get(t, srv); err != nil {
+		t.Fatalf("the central's Caddy certificate for its container address was refused: %v", err)
+	}
+	other := newCentral(t, testpki.NewCA(t, "Caddy Local Authority - 2026 ECC Root").Server(t, "127.0.0.1"))
+	if err := get(t, other); err == nil {
+		t.Fatal("another Caddy's CA was accepted")
+	}
+}
+
+func TestPrivateRoot(t *testing.T) {
+	if !httpx.PrivateRoot(testpki.NewCA(t, "Caddy Local Authority - 2026 ECC Root").PEM) {
+		t.Fatal("a Caddy local root is private")
+	}
+	if httpx.PrivateRoot(testpki.NewCA(t, "Acme Corp Root CA").PEM) {
+		t.Fatal("an organization CA keeps the name check")
+	}
+	both := append(testpki.NewCA(t, "Caddy Local Authority - 2026 ECC Root").PEM, testpki.NewCA(t, "Acme Corp Root CA").PEM...)
+	if httpx.PrivateRoot(both) {
+		t.Fatal("a bundle with an organization CA keeps the name check")
+	}
+}
+
 func TestPublicRejectsAnUntrustedCertificate(t *testing.T) {
 	srv := newCentral(t, testpki.NewCA(t, "private root").Server(t, "127.0.0.1"))
 	secure(t, httpx.CAModePublic, nil, "127.0.0.1")
@@ -120,7 +148,7 @@ func TestLegacyWithoutPolicyAndForOtherHosts(t *testing.T) {
 	if err := get(t, srv); err != nil {
 		t.Fatalf("a device host got the central's policy: %v", err)
 	}
-	if httpx.TLSConfigFor(srv.URL).InsecureSkipVerify != true || httpx.TLSConfigFor("https://central.example").InsecureSkipVerify {
+	if !httpx.TLSConfigFor(srv.URL).InsecureSkipVerify || httpx.TLSConfigFor("https://central.example").InsecureSkipVerify {
 		t.Fatal("TLSConfigFor picks the wrong configuration")
 	}
 }

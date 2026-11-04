@@ -3,6 +3,7 @@ package httpx
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"net/http"
@@ -29,7 +30,8 @@ type central struct {
 var centralPolicy atomic.Pointer[central]
 
 // SecureCentral makes every SDK connection to the given hosts verify the
-// certificate chain and the host name, and refuses plain http:// and ws://
+// certificate chain and the host name (see VerifyPinned for a central's own
+// Caddy CA), and refuses plain http:// and ws://
 // to them. mode is CAModePinned (caPEM is then the only trusted root) or
 // CAModePublic (system roots). An empty mode removes the policy: every host
 // is back to TLSConfig.
@@ -45,7 +47,12 @@ func SecureCentral(mode string, caPEM []byte, hosts ...string) error {
 		if !pool.AppendCertsFromPEM(caPEM) {
 			return errors.New("httpx: the pinned CA file has no PEM certificate")
 		}
-		cfg.RootCAs = pool
+		if PrivateRoot(caPEM) {
+			cfg.InsecureSkipVerify = true //nolint:gosec // replaced by VerifyConnection
+			cfg.VerifyConnection = VerifyChain(pool)
+		} else {
+			cfg.RootCAs = pool
+		}
 	case CAModePublic:
 	default:
 		return fmt.Errorf("httpx: unknown ca_mode %q (want %q or %q)", mode, CAModePinned, CAModePublic)
@@ -63,6 +70,48 @@ func SecureCentral(mode string, caPEM []byte, hosts ...string) error {
 	c.transport.TLSClientConfig = cfg.Clone()
 	centralPolicy.Store(c)
 	return nil
+}
+
+// VerifyChain checks the peer's chain against the pinned roots, not its
+// name. It is used only for a central's own Caddy CA (PrivateRoot): that CA
+// is generated per install and its keys never leave Caddy, so a chain to it
+// already proves the peer is that Caddy, while the name in the certificate
+// is often wrong for local installs (reached by IP with no SNI, Caddy names
+// the container's address, 172.x, not the server's). Any other pinned CA,
+// such as an organization PKI that signs other servers too, gets the
+// standard verification with the name.
+func VerifyChain(pool *x509.CertPool) func(tls.ConnectionState) error {
+	return func(cs tls.ConnectionState) error {
+		if len(cs.PeerCertificates) == 0 {
+			return errors.New("httpx: the central sent no certificate")
+		}
+		inter := x509.NewCertPool()
+		for _, c := range cs.PeerCertificates[1:] {
+			inter.AddCert(c)
+		}
+		_, err := cs.PeerCertificates[0].Verify(x509.VerifyOptions{Roots: pool, Intermediates: inter})
+		return err
+	}
+}
+
+// PrivateRoot reports whether every certificate of caPEM is a self-signed
+// root of a Caddy local authority ("Caddy Local Authority - <year> ECC
+// Root"), the per-install CA of a central with no certificate of its own.
+func PrivateRoot(caPEM []byte) bool {
+	found := false
+	for rest := caPEM; ; {
+		var b *pem.Block
+		b, rest = pem.Decode(rest)
+		if b == nil {
+			return found
+		}
+		c, err := x509.ParseCertificate(b.Bytes)
+		if err != nil || !c.IsCA || c.Subject.String() != c.Issuer.String() ||
+			!strings.HasPrefix(c.Subject.CommonName, "Caddy Local Authority") {
+			return false
+		}
+		found = true
+	}
 }
 
 // policyFor is the central policy when u points to a host of the central.
