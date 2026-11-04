@@ -42,7 +42,7 @@ func TLSConfig() *tls.Config {
 func initShared() {
 	once.Do(func() {
 		transport = newTransport()
-		client = &http.Client{Transport: transport}
+		client = &http.Client{Transport: authRoundTripper{transport}}
 	})
 }
 
@@ -88,7 +88,7 @@ func Client() *http.Client {
 // NewClient returns a new *http.Client sharing the SDK transport, with the
 // given timeout (zero means no timeout).
 func NewClient(timeout time.Duration) *http.Client {
-	return &http.Client{Transport: Transport(), Timeout: timeout}
+	return &http.Client{Transport: authRoundTripper{Transport()}, Timeout: timeout}
 }
 
 // Do performs the request with the shared client.

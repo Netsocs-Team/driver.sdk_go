@@ -142,7 +142,7 @@ func (m *microphoneObject) startStream(payload []byte) (map[string]string, error
 	}
 
 	wsURL := buildAudioStreamURL(m.controller.GetDriverhubHost(), p.SessionID)
-	ws, _, err := httpx.WebsocketDialer().Dial(wsURL, wsDriverAuthHeader(m.controller.GetDriverKey()))
+	ws, _, err := httpx.DialWebsocket(wsURL, wsDriverAuthHeader(m.controller.GetDriverKey()))
 	if err != nil {
 		return nil, fmt.Errorf("microphone: dial DriversHub audio stream: %w", err)
 	}

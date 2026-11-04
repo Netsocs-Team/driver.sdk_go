@@ -330,9 +330,7 @@ func (o *objectController) ListenActionRequests() error {
 
 	// Shared dialer: honours the SDK TLS configuration (custom CA bundle or
 	// verification opt-out). See pkg/httpx.
-	dialer := httpx.WebsocketDialer()
-
-	c, _, err := dialer.Dial(url, http.Header{
+	c, _, err := httpx.DialWebsocket(url, http.Header{
 		"X-Auth-Token": []string{o.token},
 	})
 	if err != nil {

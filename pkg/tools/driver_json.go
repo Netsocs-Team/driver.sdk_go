@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+
+	"github.com/Netsocs-Team/driver.sdk_go/pkg/auth"
 )
 
 type FileSchema struct {
@@ -17,6 +19,9 @@ type FileSchema struct {
 	SiteHost             string `json:"site_host"`
 	Token                string `json:"token"`
 	DriverID             string `json:"driver_id"`
+	// Auth is written by SmartConnect when it enrolls the driver in Keycloak.
+	// Absent: the driver uses the DriverKey, as always.
+	Auth *auth.Config `json:"auth,omitempty"`
 }
 
 func GetDriverNetsocsDotJsonContent(path string) (*FileSchema, error) {

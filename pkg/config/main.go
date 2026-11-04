@@ -1,8 +1,10 @@
 package config
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -12,6 +14,7 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/Netsocs-Team/driver.sdk_go/pkg/auth"
 	"github.com/Netsocs-Team/driver.sdk_go/pkg/httpx"
 	"github.com/Netsocs-Team/driver.sdk_go/pkg/tools"
 	"github.com/gorilla/websocket"
@@ -200,9 +203,7 @@ func ListenConfig(host string, driverKey string, siteId string, token string, dr
 
 	// Shared dialer: honours the SDK TLS configuration (custom CA bundle or
 	// verification opt-out). See pkg/httpx.
-	dialer := httpx.WebsocketDialer()
-
-	c, _, err := dialer.Dial(u.String(), http.Header{
+	c, _, err := httpx.DialWebsocket(u.String(), http.Header{
 		"Authorization": []string{driverKey},
 		"X-Auth-Token":  []string{token},
 	})
@@ -213,12 +214,27 @@ func ListenConfig(host string, driverKey string, siteId string, token string, dr
 
 	done := make(chan struct{})
 
+	// With a Keycloak identity the token is renewed on this open socket
+	// (reauth): closing it would restart the driver (DriverHub's contract).
+	reauth := make(chan string, 1)
+	if p := auth.Active(); p != nil {
+		renewCtx, stopRenew := context.WithCancel(context.Background())
+		defer stopRenew()
+		go p.KeepFresh(renewCtx, func(tok string) {
+			select {
+			case reauth <- tok:
+			default:
+			}
+		}, log.Printf)
+	}
+
 	go func() {
 		defer close(done)
 		for {
 			_, message, err := c.ReadMessage()
 			if err != nil {
 				log.Println("read:", err)
+				exitOnCloseReason(err)
 				return
 			}
 			configMessage := &ConfigMessage{}
@@ -262,6 +278,12 @@ func ListenConfig(host string, driverKey string, siteId string, token string, dr
 
 	for {
 		select {
+		case tok := <-reauth:
+			msg, _ := json.Marshal(map[string]string{"type": "reauth", "token": tok})
+			if err := c.WriteMessage(websocket.TextMessage, msg); err != nil {
+				log.Println("write reauth:", err)
+				return err
+			}
 		case response := <-responses:
 			jsondata, err := json.Marshal(response)
 			if err != nil {
@@ -292,4 +314,22 @@ func ListenConfig(host string, driverKey string, siteId string, token string, dr
 		}
 	}
 
+}
+
+// exitOnCloseReason ends the process with a code per reason when DriverHub
+// closed the socket with one (4000 restart, 4001 token expired, 4003
+// revoked), so the supervisor can tell a revoked driver from a restart.
+// Only in Keycloak identity mode: the old mode behaves exactly as before.
+func exitOnCloseReason(err error) {
+	if auth.Active() == nil {
+		return
+	}
+	var ce *websocket.CloseError
+	if !errors.As(err, &ce) {
+		return
+	}
+	if code, ok := auth.ExitCodeForClose(ce.Code); ok {
+		log.Printf("DriverHub closed the configuration socket: %q (%d), exiting with %d", ce.Text, ce.Code, code)
+		os.Exit(code)
+	}
 }

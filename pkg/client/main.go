@@ -1,13 +1,16 @@
 package client
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 
+	"github.com/Netsocs-Team/driver.sdk_go/pkg/auth"
 	"github.com/Netsocs-Team/driver.sdk_go/pkg/config"
 	"github.com/Netsocs-Team/driver.sdk_go/pkg/httpx"
 	"github.com/Netsocs-Team/driver.sdk_go/pkg/objects"
@@ -109,6 +112,12 @@ func New() (*NetsocsDriverClient, error) {
 
 	fileData, err := tools.GetDriverNetsocsDotJsonContent("driver.netsocs.json")
 	if err != nil {
+		return nil, err
+	}
+
+	// The identity must be ready before the first socket opens
+	// (NewNetsocsDriverClient connects to objects/ws right away).
+	if _, _, err := auth.Setup(context.Background(), fileData.Auth, ".", fileData.DriverKey, fileData.DriverHubHost, log.Printf); err != nil {
 		return nil, err
 	}
 

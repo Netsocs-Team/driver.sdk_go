@@ -166,7 +166,7 @@ func (s *speakerObject) startTalkback(payload []byte) (map[string]string, error)
 	}
 
 	wsURL := buildAudioStreamURL(s.controller.GetDriverhubHost(), p.SessionID)
-	ws, _, err := httpx.WebsocketDialer().Dial(wsURL, wsDriverAuthHeader(s.controller.GetDriverKey()))
+	ws, _, err := httpx.DialWebsocket(wsURL, wsDriverAuthHeader(s.controller.GetDriverKey()))
 	if err != nil {
 		return nil, fmt.Errorf("speaker: dial DriversHub audio stream: %w", err)
 	}
