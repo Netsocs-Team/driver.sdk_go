@@ -38,6 +38,7 @@ var centralPolicy atomic.Pointer[central]
 func SecureCentral(mode string, caPEM []byte, hosts ...string) error {
 	if mode == "" {
 		centralPolicy.Store(nil)
+		dropSharedConnections()
 		return nil
 	}
 	cfg := &tls.Config{MinVersion: tls.VersionTLS12}
@@ -69,7 +70,15 @@ func SecureCentral(mode string, caPEM []byte, hosts ...string) error {
 	c.transport = newTransport()
 	c.transport.TLSClientConfig = cfg.Clone()
 	centralPolicy.Store(c)
+	dropSharedConnections()
 	return nil
+}
+
+// dropSharedConnections closes the idle connections of the shared transport,
+// which may have been opened under the previous policy.
+func dropSharedConnections() {
+	initShared()
+	transport.CloseIdleConnections()
 }
 
 // VerifyChain checks the peer's chain against the pinned roots, not its
@@ -116,8 +125,17 @@ func PrivateRoot(caPEM []byte) bool {
 
 // policyFor is the central policy when u points to a host of the central.
 func policyFor(u *url.URL) *central {
+	if u == nil {
+		return nil
+	}
+	return policyForHost(u.Hostname())
+}
+
+// policyForHost is the central policy when host (a name or an IP, no port)
+// is one of the central's.
+func policyForHost(host string) *central {
 	c := centralPolicy.Load()
-	if c == nil || u == nil || !c.hosts[strings.ToLower(u.Hostname())] {
+	if c == nil || !c.hosts[strings.ToLower(strings.Trim(host, "[]"))] {
 		return nil
 	}
 	return c

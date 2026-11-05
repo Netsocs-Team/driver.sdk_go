@@ -64,7 +64,20 @@ func get(t *testing.T, srv *httptest.Server) error {
 	} else {
 		_ = c.Close()
 	}
-	if len(errs) != 0 && len(errs) != 4 {
+	// The bare transports and dialer a driver may use directly (N3-03).
+	for _, tr := range []*http.Transport{httpx.Transport(), httpx.CloneTransport()} {
+		if res, err := (&http.Client{Transport: tr}).Get(srv.URL); err != nil {
+			errs = append(errs, err)
+		} else {
+			res.Body.Close()
+		}
+	}
+	if c, _, err := httpx.WebsocketDialer().Dial("wss"+strings.TrimPrefix(srv.URL, "https")+"/ws", nil); err != nil {
+		errs = append(errs, err)
+	} else {
+		_ = c.Close()
+	}
+	if len(errs) != 0 && len(errs) != 7 {
 		t.Fatalf("the SDK connections disagree: %v", errs)
 	}
 	for _, err := range errs {
@@ -178,5 +191,34 @@ func TestSecureCentralRejectsBadSettings(t *testing.T) {
 		if err == nil {
 			t.Errorf("%s: accepted", name)
 		}
+	}
+}
+
+// The TLS dial of the SDK transports keeps HTTP/2 and a driver's own TLS
+// settings on its copy for the hosts that are not the central.
+func TestTransportKeepsHTTP2AndOwnSettings(t *testing.T) {
+	ca := testpki.NewCA(t, "central root")
+	srv := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	srv.EnableHTTP2 = true
+	srv.TLS = ca.Server(t, "127.0.0.1")
+	srv.StartTLS()
+	t.Cleanup(srv.Close)
+
+	secure(t, httpx.CAModePinned, ca.PEM, "127.0.0.1")
+	res, err := (&http.Client{Transport: httpx.Transport()}).Get(srv.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res.Body.Close()
+	if res.ProtoMajor != 2 {
+		t.Errorf("negotiated %s, want HTTP/2", res.Proto)
+	}
+
+	// A device: the driver verifies it on its own copy.
+	_ = httpx.SecureCentral("", nil)
+	tr := httpx.CloneTransport()
+	tr.TLSClientConfig.InsecureSkipVerify = false
+	if _, err := (&http.Client{Transport: tr}).Get(srv.URL); err == nil || !strings.Contains(err.Error(), "x509") {
+		t.Fatalf("own verification on the copy ignored: %v", err)
 	}
 }

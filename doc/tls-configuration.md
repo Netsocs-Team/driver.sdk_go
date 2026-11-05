@@ -72,6 +72,10 @@ espera creciente y lo registra en el log.
 Solo cambian las conexiones a los hosts de la central. El resto (cámaras y
 otros dispositivos por HTTPS con `httpx.Client()`) sigue igual. `httpx.Client()`,
 `httpx.NewClient()`, `httpx.Resty()`, `httpx.RoundTripper()` y
-`httpx.DialWebsocket()` aplican la política; `httpx.Transport()`,
-`httpx.CloneTransport()` y `httpx.WebsocketDialer()` llevan siempre la
-configuración antigua.
+`httpx.DialWebsocket()` aplican la política completa. Desde v0.8.0-rc.3,
+`httpx.Transport()`, `httpx.CloneTransport()` y `httpx.WebsocketDialer()`
+también verifican el TLS de los hosts de la central (lo que cambie el driver
+en su copia solo vale para los demás hosts), pero no rechazan `http://`/`ws://`
+ni ponen credenciales, y detrás de un proxy HTTP usan su propia configuración.
+Para hablar con la central sin el token del driver (por ejemplo WHIP, que
+lleva su propio token de publicación) use `httpx.RoundTripper()`.
