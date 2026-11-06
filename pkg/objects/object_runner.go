@@ -14,6 +14,8 @@ type objectRunner struct {
 	controller ObjectController
 	// objectsMap map[string][]RegistrableObject
 	objectsMap sync.Map
+	// registerMu serialises the read-modify-write of a domain's object list.
+	registerMu sync.Mutex
 }
 
 // GetController implements ObjectRunner.
@@ -117,16 +119,8 @@ func (o *objectRunner) RegisterObject(object RegistrableObject) error {
 		}
 	}
 
-	existingObjectsRaw, ok := o.objectsMap.Load(object.GetMetadata().Domain)
-	if !ok {
-		o.objectsMap.Store(object.GetMetadata().Domain, []RegistrableObject{object})
-	} else {
-		existingObjects, validType := existingObjectsRaw.([]RegistrableObject)
-		if !validType {
-			// sugar.Info("invalid objects type", zap.String("domain", object.GetMetadata().Domain))
-			return errors.New("invalid objects type")
-		}
-		o.objectsMap.Store(object.GetMetadata().Domain, append(existingObjects, object))
+	if err := o.storeObject(object); err != nil {
+		return err
 	}
 	eventbus.Pubsub.Publish("SUBSCRIBE_OBJECTS_COMMANDS_LISTENING", struct{ Domain string }{Domain: object.GetMetadata().Domain})
 
@@ -141,4 +135,41 @@ func NewObjectRunner(controller ObjectController) ObjectRunner {
 
 	runner.listenActions()
 	return runner
+}
+
+// storeObject adds object to its domain's list, replacing an object already
+// registered with the same ObjectID.
+//
+// Drivers register their objects again every time the hub asks them to
+// provision a device (a hub restart, a reconnect, an edited device). Appending
+// unconditionally kept every previous instance: each action then ran once per
+// registration — after one hub restart a single publish_stream_start opened two
+// RTSP sessions and two WHIP publishers for the same stream, the second one
+// replaced the first in the hub, and the viewer sat on a spinner until the
+// player reconnected. The newest registration wins because it carries the
+// device's current configuration.
+func (o *objectRunner) storeObject(object RegistrableObject) error {
+	o.registerMu.Lock()
+	defer o.registerMu.Unlock()
+
+	domain := object.GetMetadata().Domain
+	id := object.GetMetadata().ObjectID
+	existingRaw, ok := o.objectsMap.Load(domain)
+	if !ok {
+		o.objectsMap.Store(domain, []RegistrableObject{object})
+		return nil
+	}
+	existing, validType := existingRaw.([]RegistrableObject)
+	if !validType {
+		return errors.New("invalid objects type")
+	}
+	// Copy on write: listenActions may be iterating the current slice.
+	next := make([]RegistrableObject, 0, len(existing)+1)
+	for _, obj := range existing {
+		if obj.GetMetadata().ObjectID != id {
+			next = append(next, obj)
+		}
+	}
+	o.objectsMap.Store(domain, append(next, object))
+	return nil
 }
