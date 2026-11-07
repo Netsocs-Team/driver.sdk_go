@@ -69,8 +69,22 @@ type RecordingSegmentItem struct {
 	StartTime string `json:"start_time"`
 	EndTime   string `json:"end_time"`
 	TypeLabel string `json:"type_label"`
-	Color     string `json:"color"`
+	// RecordingType is the normalized kind of recording (RecordingType*
+	// constants). The player paints and names it the same for every brand;
+	// Color is only a fallback for players that predate it.
+	RecordingType string `json:"recording_type,omitempty"`
+	Color         string `json:"color"`
 }
+
+// Normalized kinds of recording for RecordingSegmentItem.RecordingType.
+const (
+	RecordingTypeContinuous = "continuous"
+	RecordingTypeMotion     = "motion"
+	RecordingTypeAlarm      = "alarm"
+	RecordingTypeSmart      = "smart"
+	RecordingTypeManual     = "manual"
+	RecordingTypeOther      = "other"
+)
 
 type MediaFileItem struct {
 	Channel   string
