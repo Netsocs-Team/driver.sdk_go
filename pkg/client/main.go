@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/Netsocs-Team/driver.sdk_go/pkg/auth"
 	"github.com/Netsocs-Team/driver.sdk_go/pkg/config"
@@ -271,24 +272,42 @@ func (c *NetsocsDriverClient) AddEventTypes(eventTypes []objects.EventType) erro
 	return err
 }
 
+// DispatchEvent sends an event to the central and reports whether it was
+// stored. A nil error means the central stored it (or already had it: a
+// retry with the same eventData.ID is not an error). Any other answer is an
+// error, *objects.EventNotStoredError when the central could not store it: the
+// caller may retry later with the same ID. It returns the response body, as
+// before.
 func (c *NetsocsDriverClient) DispatchEvent(domain string, eventKey string, eventData objects.Event) (string, error) {
 	req := objects.NewEventRequestBodySchema{}
 	req.EventType = domain + "." + eventKey
 	req.EventAdditionalProperties = eventData.Properties
 	req.Images = eventData.ImageURLs
 	req.VideoClips = eventData.VideoURLs
+	req.ID = eventData.ID
+	if req.ID == "" {
+		req.ID = objects.NewEventID()
+	}
+	occurred := eventData.OccurredAt
+	if occurred.IsZero() {
+		occurred = time.Now()
+	}
+	req.OccurredAt = occurred.Format(time.RFC3339Nano)
 
 	for _, objID := range eventData.ObjectIDs {
 		req.Rels = append(req.Rels, fmt.Sprintf("/objects/%s", objID))
 	}
 
-	resp, err := httpx.Resty().R().SetHeader("X-Auth-Token", c.token).SetBody(req).Post(c.driverHubHost + "/objects/events")
-
+	ctx, cancel := context.WithTimeout(context.Background(), objects.EventSendTimeout)
+	defer cancel()
+	resp, err := httpx.Resty().R().SetContext(ctx).SetHeader("X-Auth-Token", c.token).SetBody(req).Post(c.driverHubHost + "/objects/events")
 	if err != nil {
-		return "", err
+		return "", &objects.EventNotStoredError{ID: req.ID, Err: err}
+	}
+	if resp.IsError() {
+		return resp.String(), &objects.EventNotStoredError{ID: req.ID, StatusCode: resp.StatusCode(), Body: resp.String()}
 	}
 	return resp.String(), nil
-
 }
 
 func (c *NetsocsDriverClient) GetEvent(eventId string) (objects.EventRecord, error) {

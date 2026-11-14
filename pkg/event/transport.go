@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/Netsocs-Team/driver.sdk_go/pkg/httpx"
+	"github.com/Netsocs-Team/driver.sdk_go/pkg/objects"
 )
 
 // eventURL builds the misc-event endpoint for host/port.
@@ -21,15 +22,23 @@ func eventURL(host string, port int, eventKey string) string {
 	return fmt.Sprintf("http://%s:%d/v1/topologia/misc/%s", host, port, eventKey)
 }
 
-// postEvent sends the body through the shared SDK client, so HTTPS hosts honour
-// the TLS configuration in pkg/httpx.
+// eventClient bounds each send (objects.EventSendTimeout) and shares the SDK
+// transport, so HTTPS hosts honour the TLS configuration in pkg/httpx.
+var eventClient = httpx.NewClient(objects.EventSendTimeout)
+
+// postEvent sends the body and reports whether the server accepted it: a
+// non-2xx answer is an error, as is no answer within EventSendTimeout.
 func postEvent(host string, port int, eventKey string, body io.Reader) error {
-	res, err := httpx.Client().Post(eventURL(host, port, eventKey), "application/json", body)
+	res, err := eventClient.Post(eventURL(host, port, eventKey), "application/json", body)
 	if err != nil {
 		return err
 	}
 	// Drain and close so the connection returns to the pool.
 	defer res.Body.Close()
+	msg, _ := io.ReadAll(io.LimitReader(res.Body, 4096))
 	_, _ = io.Copy(io.Discard, res.Body)
+	if res.StatusCode < 200 || res.StatusCode > 299 {
+		return fmt.Errorf("event %s not accepted: server answered %d: %s", eventKey, res.StatusCode, strings.TrimSpace(string(msg)))
+	}
 	return nil
 }
