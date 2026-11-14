@@ -55,7 +55,7 @@ func (c *Config) Valid() bool {
 // with a reason (only in JWT mode). The supervisor (SmartConnect, systemd)
 // restarts the driver for all of them except ExitRevoked.
 const (
-	ExitRestart      = 75 // close 4000: restart requested by DriverHub
+	ExitRestart      = 75 // close 4000, or DriverHub lost or not reachable yet: launch the driver again soon (not a crash)
 	ExitTokenExpired = 76 // close 4001: token expired or reauth rejected
 	ExitRevoked      = 77 // close 4003: identity revoked, do not restart
 	ExitDowngrade    = 78 // the central stopped accepting JWTs after this driver used them, or its TLS settings are unusable

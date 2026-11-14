@@ -208,7 +208,11 @@ func ListenConfig(host string, driverKey string, siteId string, token string, dr
 		"X-Auth-Token":  []string{token},
 	})
 	if err != nil {
-		log.Fatal("dial:", err)
+		// DriverHub is not there yet (it is starting, or restarting): exit
+		// with auth.ExitRestart so the supervisor launches the driver again
+		// soon instead of counting a crash.
+		log.Printf("dial: %v", err)
+		os.Exit(auth.ExitRestart)
 	}
 	defer c.Close()
 
