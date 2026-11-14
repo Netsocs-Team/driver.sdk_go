@@ -79,12 +79,15 @@ var (
 		5051:  "Dahua (old firmware)",
 		7711:  "Hanwha IP Installer",
 		37020: "Hikvision SADP",
+		// ONVIF answers by unicast to the probe's source port: a fixed
+		// one, so a host firewall can let the answers in.
+		3703: "ONVIF WS-Discovery answers",
 	}
 )
 
 // AnswerPorts are the fixed UDP ports devices answer to: a host firewall
 // must let them in (Windows Hyper-V firewall, ufw, firewalld).
-func AnswerPorts() []int { return []int{37810, 5051, 7711, 37020} }
+func AnswerPorts() []int { return []int{37810, 5051, 7711, 37020, 3703} }
 
 // Validate checks that the probe is one the service may send.
 func (p *Probe) Validate() error {

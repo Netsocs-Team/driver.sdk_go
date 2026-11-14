@@ -13,6 +13,7 @@ func TestValidateAllowsOnlyBroadcastOrMulticastToKnownPorts(t *testing.T) {
 		{Dest: Broadcast, DestPort: 7701, ListenPort: 7711, Payload: []byte("x")},
 		{Dest: "239.255.255.250", DestPort: 37020, ListenPort: 37020, Payload: []byte("x")},
 		{Dest: "239.255.255.250", DestPort: 3702, ListenPort: 0, Payload: []byte("x")},
+		{Dest: "239.255.255.250", DestPort: 3702, ListenPort: 3703, Payload: []byte("x")},
 	}
 	for _, p := range ok {
 		if err := p.Validate(); err != nil {
